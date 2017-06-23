@@ -13,6 +13,8 @@ class Deck:
             self.cards.append(sc)
 
     def draw_random_cards(self, number_of_cards):
+        if number_of_cards > len(self.cards):
+            raise Exception("Tried to withdraw too many cards. There are " + str(len(self.cards)) + " cards left in this deck.")
         random.shuffle(self.cards)
         return_cards = self.cards[:number_of_cards]
         self.cards = self.cards[number_of_cards:]
@@ -34,4 +36,19 @@ class SashimiCard(Card):
     pass
 
 class DumplingCard(Card):
+    pass
+
+class NigiriCard(Card):
+    wasabi = None
+
+class SquidNigiriCard(NigiriCard):
+    pass
+
+class SalmonNigiriCard(NigiriCard):
+    pass
+
+class EggNigiriCard(NigiriCard):
+    pass
+
+class WasabiCard(Card):
     pass

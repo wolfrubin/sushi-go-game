@@ -1,4 +1,5 @@
 import unittest
+import random
 from main import GameEngine
 from player import Player
 
@@ -52,9 +53,23 @@ class TestGameEngine(unittest.TestCase):
         self.game_engine.start_game()
 
         self.assertEqual(self.game_engine.cards_per_player, 10)
-        self.assertNotEqual(self.player_one.current_hand, None)
-        self.assertNotEqual(self.player_two.current_hand, None)
+        self.assertIsNone(self.player_one.current_hand)
+        self.assertIsNone(self.player_two.current_hand)
         self.assertEqual(len(self.player_one.current_hand), 10)
+
+    def test_draw_too_many_random_cards(self):
+        """
+        Here we test that the draw_random_cards method draws the right
+        number of cards and that it errors when we try and draw too many
+        cards.
+        """
+        deck = self.game_engine.deck
+
+        self.assertEqual(len(deck.draw_random_cards(3)), 3)
+
+        with self.assertRaises(Exception) as context:
+            deck.draw_random_cards(1000)
+            self.assertTrue('Tried to withdraw too many cards' in context)
 
     def test_play_card(self):
         """
@@ -74,7 +89,6 @@ class TestGameEngine(unittest.TestCase):
         Here we test the player ready functionality.
         Only once each player is ready to play their next card
         we allow the game to proceed and exchange hands.
-        TODO. Verify that the exchange_hands method is called.
         """
         self.game_engine.start_game()
 
@@ -82,10 +96,10 @@ class TestGameEngine(unittest.TestCase):
         card_p2 = self.player_two.current_hand[1]
 
         self.game_engine.play_card(self.player_one, card_p1)
-        self.assertEqual(self.game_engine.are_players_ready_next_card(), False)
+        self.assertFalse(self.game_engine.are_players_ready_next_card())
 
         self.game_engine.play_card(self.player_two, card_p2)
-        self.assertEqual(self.game_engine.are_players_ready_next_card(), True)
+        self.assertTrue(self.game_engine.are_players_ready_next_card())
 
     def test_exchange_hands(self):
         """
@@ -144,7 +158,7 @@ class TestGameEngine(unittest.TestCase):
 
     def test_exchange_hands_twice(self):
         """
-        We test the the hand exchanging mechanism works twice
+        We test the the hand exchanging mechanism works twice.
         """
         self.game_engine.start_game()
 
@@ -172,15 +186,15 @@ class TestGameEngine(unittest.TestCase):
         self.game_engine.start_game()
 
         self.game_engine.play_card(self.player_one, self.player_one.current_hand[0])
-        self.assertEqual(self.player_one.is_ready, True)
-        self.assertEqual(self.player_two.is_ready, False)
+        self.assertTrue(self.player_one.is_ready)
+        self.assertFalse(self.player_two.is_ready)
         self.game_engine.try_exchange_hands()
 
         self.game_engine.play_card(self.player_two, self.player_two.current_hand[0])
-        self.assertEqual(self.player_two.is_ready, True)
+        self.assertTrue(self.player_two.is_ready)
         self.game_engine.try_exchange_hands()
 
-        self.assertEqual(self.game_engine.are_players_ready_next_card(), False)
+        self.assertFalse(self.game_engine.are_players_ready_next_card())
 
     def test_start_game_hand_size(self):
         # A little unnecessary to test

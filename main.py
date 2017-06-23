@@ -5,7 +5,7 @@ from deck import Deck
 from player import Player
 
 class GameEngine:
-    max_rounds = 1
+    max_rounds = 3
     current_round = 0
     cards_per_player = None
     players = None
@@ -14,6 +14,8 @@ class GameEngine:
 
     def __init__(self):
         self.deck = Deck()
+        self.scorer = Scorer()
+        self.scores = {}
 
     def add_player(self):
         if self.players == None:
@@ -40,27 +42,42 @@ class GameEngine:
         if not len(self.players) in range(2,6):
             raise Exception("Incorrect number of players. There can be 2, 3, 4, or 5 players.")
 
+        if self.hand_exchange_order is None:
+            self.hand_exchange_order = self.players
+
         self.calc_card_per_player(len(self.players))
 
+        self.in_progress = True
+
         for player in self.players:
+            self.scores[player] = []
+
+        self.start_round()
+
+    def start_round(self):
+        for player in self.players:
+            player.played_cards = []
+        self.draw_cards_for_players(self.players)
+        
+    def set_hand_exchange_order(self, hand_exchange_order = None):
+        if hand_exchange_order is None:
+            self.hand_exchange_order = self.players
+        else:
+            self.hand_exchange_order = hand_exchange_order
+        
+    def draw_cards_for_players(self, players):
+        for player in players:
             cards = self.deck.draw_random_cards(self.cards_per_player)
             player.current_hand = cards
 
-        if self.hand_exchange_order is None:
-            self.hand_exchange_order = self.players
-        
-        self.in_progress = True
-        
     def play_card(self, player, card):
         player.play_card(card)
     
     def are_players_ready_next_card(self):
-        all_ready = True
         for player in self.players:
             if player.is_ready == False:
-                all_ready = False
-                break
-        return all_ready
+                return False
+        return True
 
     def try_exchange_hands(self):
         """
@@ -99,19 +116,24 @@ class GameEngine:
             print(player.name + " has played " + str(player.played_cards))
 
     def round_complete(self):
-        round_complete = True
         for player in self.players:
             if len(player.current_hand) != 0:
-                round_complete = False
-                break
-        return round_complete
+                return False
+        self.current_round += 1
+        self.record_scores()
+        return True
+
+    def record_scores(self):
+        for player in self.players:
+            self.scores[player].append(self.scorer.score_for_hand(player.played_cards))
 
     def game_complete(self):
         if self.current_round == self.max_rounds:
-            
+            return True
+        return False
 
-    def __repr__(self):
-        return {}
+    # def __repr__(self):
+    #     return {}
 
 if __name__ == "__main__":
     print("Starting game")
@@ -119,17 +141,13 @@ if __name__ == "__main__":
 
     player_one = game_engine.add_player()
     player_two = game_engine.add_player()
-    player_three = game_engine.add_player()
-    player_four = game_engine.add_player()
 
     player_one.name = "Christian"
     player_two.name = "Brandon"
-    player_three.name = "Cara"
-    player_four.name = "Karin"
 
     game_engine.start_game()
 
-    while True:
+    while not game_engine.game_complete():
         for player in game_engine.players:
             print(str(player.name) + " it's your turn.")
             print("Your cards are " + str(player.current_hand))
@@ -138,7 +156,6 @@ if __name__ == "__main__":
             game_engine.currently_played()
             game_engine.try_exchange_hands()
             if game_engine.round_complete() is True:
-                for player in game_engine.players:
-                    player.print_score()
-                print("Round complete")
-                break
+                print("At the end of this round the scores are as follows.")
+                print(game_engine.scores)
+                game_engine.start_round()

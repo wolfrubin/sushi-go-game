@@ -23,3 +23,10 @@ class Scorer:
         
     def score_for_sashimi(self, number_of_sashimi):
         return ((number_of_sashimi/3) * 10)
+
+    def score_for_nigiri(self, nigiri_cards):
+        """
+        Here we need to score the nigiri cards. We need the card objects
+        as they contain the wasabi that doubles the score.
+        """
+        pass
