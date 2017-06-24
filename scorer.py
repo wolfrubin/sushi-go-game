@@ -1,11 +1,14 @@
+
 class Scorer:
     
     def score_for_hand(self, hand):
         # This works for now but will need abstracting when further cards are introduced
-        tempura_count = sum(map(lambda x : 1 if (x.__class__.__name__ == "TempuraCard") else 0, hand))
-        dumpling_count = sum(map(lambda x : 1 if (x.__class__.__name__ == "DumplingCard") else 0, hand))
-        sashimi_count = sum(map(lambda x : 1 if (x.__class__.__name__ == "SashimiCard") else 0, hand))
-        score = self.score_for_dumplings(dumpling_count) + self.score_for_tempura(tempura_count) + self.score_for_sashimi(sashimi_count)
+        tempura_count = sum(map(lambda x : 1 if (x.card_type == "TempuraCard") else 0, hand))
+        dumpling_count = sum(map(lambda x : 1 if (x.card_type == "DumplingCard") else 0, hand))
+        sashimi_count = sum(map(lambda x : 1 if (x.card_type == "SashimiCard") else 0, hand))
+        nigiri_cards = set()
+        map(lambda x : nigiri_cards.add(x) if ("NigiriCard" in x.card_type) else 0, hand)
+        score = self.score_for_dumplings(dumpling_count) + self.score_for_tempura(tempura_count) + self.score_for_sashimi(sashimi_count) + self.score_for_nigiri(nigiri_cards)
         return score
 
     def score_for_dumplings(self, number_of_dumplings):
@@ -29,4 +32,19 @@ class Scorer:
         Here we need to score the nigiri cards. We need the card objects
         as they contain the wasabi that doubles the score.
         """
-        pass
+        score = 0
+        for card in nigiri_cards:
+            card_score = 0
+            if card.card_type == "EggNigiriCard":
+                card_score = 1
+            if card.card_type == "SalmonNigiriCard":
+                card_score = 2
+            if card.card_type == "SquidNigiriCard":
+                card_score = 3
+
+            if card.wasabi is not None:
+                card_score = card_score * 3
+
+            score += card_score
+
+        return score

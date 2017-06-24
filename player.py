@@ -22,10 +22,13 @@ class Player:
         if not nigiri_card in self.played_cards or not wasabi_card in self.played_cards:
             raise Exception("Card not in played hand.")
         
-        if not "Nigiri" in nigiri_card.__class__.__name__:
-            raise Exception("Cannot play a wasabi card on a card of type " + nigiri_card.__class__.__name__ + ".")
-        if not "Wasabi" in wasabi_card.__class__.__name__:
+        if not "Nigiri" in nigiri_card.card_type:
+            raise Exception("Cannot play a wasabi card on a card of type " + nigiri_card.card_type + ".")
+        if not "Wasabi" in wasabi_card.card_type:
             raise Exception("Cannot play a non wasabi card using this method.")
 
         nigiri_card.wasabi = wasabi_card
         del self.played_cards[self.played_cards.index(wasabi_card)]
+
+    def __repr__(self):
+        return self.name

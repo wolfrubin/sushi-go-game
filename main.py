@@ -1,6 +1,5 @@
 from cards import TempuraCard, DumplingCard, SashimiCard
 from scorer import Scorer
-from player_number_getter import PlayerNumberGetter
 from deck import Deck
 from player import Player
 
@@ -115,13 +114,15 @@ class GameEngine:
         for player in self.players:
             print(player.name + " has played " + str(player.played_cards))
 
-    def round_complete(self):
+    def is_round_complete(self):
         for player in self.players:
             if len(player.current_hand) != 0:
                 return False
+        return True
+
+    def end_current_round(self):
         self.current_round += 1
         self.record_scores()
-        return True
 
     def record_scores(self):
         for player in self.players:
@@ -154,8 +155,11 @@ if __name__ == "__main__":
             card_index = int(raw_input("Please input an index to play a card: "))
             game_engine.play_card(player, player.current_hand[card_index])
             game_engine.currently_played()
-            game_engine.try_exchange_hands()
-            if game_engine.round_complete() is True:
-                print("At the end of this round the scores are as follows.")
-                print(game_engine.scores)
-                game_engine.start_round()
+        
+        game_engine.try_exchange_hands()
+        if game_engine.is_round_complete() is True:
+            game_engine.end_current_round()
+            print("At the end of this round the scores are as follows.")
+            print(game_engine.scores)
+            game_engine.start_round()
+
