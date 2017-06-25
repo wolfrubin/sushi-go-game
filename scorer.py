@@ -22,7 +22,7 @@ class Scorer:
         return scores
 
     def calculate_maki_scores(self, players):
-        maki_counts = self.calculate_maki_roll_count(map(lambda x:x.played_hand, players))
+        maki_counts = self.calculate_maki_roll_count(map(lambda x:x.played_cards, players))
         return self.maki_score_for_roll_count(maki_counts)
 
     def maki_score_for_roll_count(self, roll_count):
