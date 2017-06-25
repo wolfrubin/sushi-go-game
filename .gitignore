@@ -3,3 +3,4 @@
 .coverage
 SushiGoTM-RULES.pdf
 htmlcov/
+venv/

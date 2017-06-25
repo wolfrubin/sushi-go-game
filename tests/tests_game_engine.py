@@ -8,8 +8,7 @@ Here we test the core game engine. This class serves as the main access
 point to interact with the game. When the time comes to make an API on
 top of the game. This should be the main object interacted with.
 
-Other than the Player class, everything else should remain hidden behind
-the game engine class.
+Everything else should remain hidden behind the game engine class.
 """
 
 class TestGameEngine(unittest.TestCase):
