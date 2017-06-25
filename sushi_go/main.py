@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
     game_engine.start_game()
 
-    while not game_engine.game_complete():
+    while not game_engine.is_game_complete():
         for player in game_engine.players:
             print(str(player.name) + " it's your turn.")
             print("Your cards are " + str(player.current_hand))
