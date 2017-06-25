@@ -16,9 +16,7 @@ class Scorer:
             score = self.score_for_independent_hand(player.played_cards)
             independent_scores.append(score)
         maki_scores = self.calculate_maki_scores(players)
-        # Needs to be elementwise addition
-        # Work out nice way of doing this later
-        scores = independent_scores + maki_scores
+        scores = [sum(x) for x in zip(independent_scores, maki_scores)]
         return scores
 
     def calculate_maki_scores(self, players):

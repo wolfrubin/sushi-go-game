@@ -12,13 +12,13 @@ class TestScoring(unittest.TestCase):
     def setUp(self):
         self.scorer = Scorer()
 
-    def test_score_for_round_integration_one(self):
+    def test_score_for_round_independent_one(self):
         cards = [TempuraCard(), TempuraCard(), TempuraCard(),
         DumplingCard(), DumplingCard(), SashimiCard(), SashimiCard()]
 
         self.assertEqual(self.scorer.score_for_independent_hand(cards), 8)
 
-    def test_score_for_round_integration_two(self):
+    def test_score_for_round_independent_two(self):
         sc = SquidNigiriCard()
         wc = WasabiCard()
         sc.wasabi = wc

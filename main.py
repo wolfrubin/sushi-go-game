@@ -124,9 +124,9 @@ class GameEngine:
         self.record_scores()
 
     def record_scores(self):
-        # for player in self.players:
-        #     self.scores[player].append(self.scorer.score_for_hand(player.played_cards))
-        self.scorer.score_for_round(self.players)
+        scores = self.scorer.score_for_round(self.players)
+        for idx, score in enumerate(scores):
+            self.scores[self.players[idx]].append(score)
 
     def game_complete(self):
         if self.current_round == self.max_rounds:
