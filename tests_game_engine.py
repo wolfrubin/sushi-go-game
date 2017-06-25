@@ -37,6 +37,7 @@ class TestGameEngine(unittest.TestCase):
         We should not be able to remove a player that doesn't exist.
         """
         player_three = Player()
+        player_three.name = "Foo"
 
         with self.assertRaises(ValueError) as context:
             self.game_engine.remove_player(player_three)
@@ -53,8 +54,8 @@ class TestGameEngine(unittest.TestCase):
         self.game_engine.start_game()
 
         self.assertEqual(self.game_engine.cards_per_player, 10)
-        self.assertIsNone(self.player_one.current_hand)
-        self.assertIsNone(self.player_two.current_hand)
+        self.assertIsNot(self.player_one.current_hand, None)
+        self.assertIsNot(self.player_two.current_hand, None)
         self.assertEqual(len(self.player_one.current_hand), 10)
 
     def test_draw_too_many_random_cards(self):

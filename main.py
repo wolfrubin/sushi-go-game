@@ -1,4 +1,3 @@
-from cards import TempuraCard, DumplingCard, SashimiCard
 from scorer import Scorer
 from deck import Deck
 from player import Player
@@ -125,8 +124,9 @@ class GameEngine:
         self.record_scores()
 
     def record_scores(self):
-        for player in self.players:
-            self.scores[player].append(self.scorer.score_for_hand(player.played_cards))
+        # for player in self.players:
+        #     self.scores[player].append(self.scorer.score_for_hand(player.played_cards))
+        self.scorer.score_for_round(self.players)
 
     def game_complete(self):
         if self.current_round == self.max_rounds:
