@@ -99,10 +99,7 @@ class GameEngine:
             player.is_ready = False
 
     def swap_hands(self, player_one, player_two):
-        temp_hand_1 = player_one.current_hand
-        temp_hand_2 = player_two.current_hand
-        player_one.current_hand = temp_hand_2
-        player_two.current_hand = temp_hand_1
+        player_one.current_hand, player_two.current_hand = player_two.current_hand, player_one.current_hand
 
     def currently_played(self):
         for player in self.players:
