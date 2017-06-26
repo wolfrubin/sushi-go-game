@@ -7,6 +7,7 @@ An implementation of the card game SushiGo! in python.
 3. Fix the way that the initial deck is generated.  
 4. Remove the magic numbers from the code around scoring.  
 5. Move the add wasabi logic to the nigiri cards.  
+6. Add the chopstick type card.  
 
 ### Future work
 1. Add a web API.  
