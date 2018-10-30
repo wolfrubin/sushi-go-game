@@ -89,6 +89,8 @@ class GameEngine:
         Here we sequentially swap hands between player pairs.
         [1,2,3,4] => [2,3,4,1]
         Feels inefficient. Should be able to improve.
+
+        index of card = index of card + 1 MOD len(players)
         """
         for index, player in enumerate(self.hand_exchange_order[:-1]):
             next_index = index + 1
