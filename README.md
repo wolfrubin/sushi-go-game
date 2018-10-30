@@ -15,7 +15,7 @@ An implementation of the card game SushiGo! in python.
 2. Build a mobile app.  
 
 ### How to run
-1. `python main.py` starts the game with two players
+1. From the main directory run `python -m sushi_go.main` starts the game with two players
 2. First players go, they input the index of the card they wish to play from their hand
 3. Second players go, input the index of the card they wish to play from their hand
 4. Play until all hands are complete

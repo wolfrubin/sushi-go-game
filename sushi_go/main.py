@@ -24,4 +24,3 @@ if __name__ == "__main__":
             print("At the end of this round the scores are as follows.")
             print(game_engine.scores)
             game_engine.start_round()
-
