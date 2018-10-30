@@ -1,6 +1,7 @@
 *.pyc
 .DS_Store
 .coverage
+.idea
 SushiGoTM-RULES.pdf
 htmlcov/
 venv/
