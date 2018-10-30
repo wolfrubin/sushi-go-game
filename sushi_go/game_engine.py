@@ -62,8 +62,15 @@ class GameEngine:
             cards = self.deck.draw_random_cards(self.cards_per_player)
             player.current_hand = cards
 
-    def play_card(self, player, card):
-        player.play_card(card)
+    def select_and_play(self, player):
+        try:
+            card_index = int(input("Please input an index to play a card: "))
+            card = player.current_hand[card_index]
+        except (SyntaxError, ValueError, NameError, IndexError):
+            print('Invalid input, please try again')
+            self.select_and_play(player)
+        else:
+            player.play_card(card)
     
     def are_players_ready_next_card(self):
         for player in self.players:
@@ -126,3 +133,10 @@ class GameEngine:
         if self.current_round == self.max_rounds:
             return True
         return False
+
+    def run_game_complete(self):
+        print("Game complete")
+        end_game_total_scores = {}
+        for player in self.players:
+            end_game_total_scores[player.name] = sum(self.scores[player])
+        print(end_game_total_scores)
