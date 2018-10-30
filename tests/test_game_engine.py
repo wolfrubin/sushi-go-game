@@ -15,8 +15,10 @@ class TestGameEngine(unittest.TestCase):
     
     def setUp(self):
         self.game_engine = GameEngine()
-        self.player_one = self.game_engine.add_player()
-        self.player_two = self.game_engine.add_player()
+        self.player_one = Player('Test one')
+        self.player_two = Player('Test two')
+        self.game_engine.add_player(self.player_one)
+        self.game_engine.add_player(self.player_two)
         
     def test_start_game_in_progress(self):
         """
@@ -46,8 +48,7 @@ class TestGameEngine(unittest.TestCase):
         """
         We should not be able to remove a player that doesn't exist.
         """
-        player_three = Player()
-        player_three.name = "Foo"
+        player_three = Player("Foo")
 
         with self.assertRaises(ValueError) as context:
             self.game_engine.remove_player(player_three)
@@ -133,9 +134,12 @@ class TestGameEngine(unittest.TestCase):
         We test exchanging five players hands.
         [1,2,3,4,5] => [2,3,4,5,1]
         """
-        player_three = self.game_engine.add_player()
-        player_four = self.game_engine.add_player()
-        player_five = self.game_engine.add_player()
+        player_three = Player('Three')
+        player_four = Player('Four')
+        player_five = Player('Five')
+        self.game_engine.add_player(player_three)
+        self.game_engine.add_player(player_four)
+        self.game_engine.add_player(player_five)
 
         self.game_engine.start_game()
 
@@ -153,8 +157,10 @@ class TestGameEngine(unittest.TestCase):
         default order is set. [3,4,1,2] => [4,1,2,3].
         I.E. player_three's hand should go to player four.
         """
-        player_three = self.game_engine.add_player()
-        player_four = self.game_engine.add_player()
+        player_three = Player('Three')
+        player_four = Player('Four')
+        self.game_engine.add_player(player_three)
+        self.game_engine.add_player(player_four)
 
         self.game_engine.set_hand_exchange_order([player_three, player_four, self.player_one, self.player_two])
         
@@ -254,7 +260,7 @@ class TestGameEngine(unittest.TestCase):
 
     def test_start_game_hand_size(self):
         """
-        A little unnecessary to test.
+        Test that the correct number of cards per player is set
         """
         self.game_engine.calc_card_per_player(2)
         self.assertEqual(self.game_engine.cards_per_player, 10)
@@ -267,8 +273,3 @@ class TestGameEngine(unittest.TestCase):
 
         self.game_engine.calc_card_per_player(5)
         self.assertEqual(self.game_engine.cards_per_player, 7)
-
-
-
-if __name__ == '__main__':
-    unittest.main()

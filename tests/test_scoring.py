@@ -117,7 +117,9 @@ class TestScoring(unittest.TestCase):
 
         hand = [mk_1, mk_2, tc, wc]
 
-        self.assertEqual(self.scorer.maki_from_hand(hand), [mk_1,mk_2])
+        for idx, card in enumerate(self.scorer.maki_from_hand(hand)):
+            self.assertEqual(card, hand[idx])
+        
 
     def test_score_from_maki_numbers(self):
         """
@@ -138,7 +140,3 @@ class TestScoring(unittest.TestCase):
         with Maki type cards.
         """
         pass
-
-
-if __name__ == "__main__":
-    unittest.main()

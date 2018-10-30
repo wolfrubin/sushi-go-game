@@ -65,17 +65,14 @@ class Scorer:
         return sum(map(lambda x : x.number_of_rolls, maki_cards))
 
     def maki_from_hand(self, hand):
-        maki = []
-        map(lambda x: maki.append(x) if (x.card_type == "MakiCard") else 0, hand)
-        return maki
+        return filter(lambda x: (x.card_type == "MakiCard"), hand)
 
     def score_for_independent_hand(self, hand):
         # This works for now but will need abstracting when further cards are introduced
         tempura_count = sum(map(lambda x : 1 if (x.card_type == "TempuraCard") else 0, hand))
         dumpling_count = sum(map(lambda x : 1 if (x.card_type == "DumplingCard") else 0, hand))
         sashimi_count = sum(map(lambda x : 1 if (x.card_type == "SashimiCard") else 0, hand))
-        nigiri_cards = []
-        map(lambda x : nigiri_cards.append(x) if ("NigiriCard" in x.card_type) else 0, hand)
+        nigiri_cards = filter(lambda x : ("NigiriCard" in x.card_type), hand)
         score = self.score_for_dumplings(dumpling_count) + self.score_for_tempura(tempura_count) + self.score_for_sashimi(sashimi_count) + self.score_for_nigiri(nigiri_cards)
         return score
 
@@ -90,15 +87,15 @@ class Scorer:
         return score
 
     def score_for_tempura(self, number_of_tempura):
-        return ((number_of_tempura/2) * 5)
+        return ((number_of_tempura//2) * 5)
         
     def score_for_sashimi(self, number_of_sashimi):
-        return ((number_of_sashimi/3) * 10)
+        return ((number_of_sashimi//3) * 10)
 
     def score_for_nigiri(self, nigiri_cards):
         """
         Here we need to score the nigiri cards. We need the card objects
-        as they contain the wasabi that doubles the score.
+        as they contain the wasabi that trebles the score.
         """
         score = 0
         for card in nigiri_cards:

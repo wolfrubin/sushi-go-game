@@ -1,12 +1,13 @@
-from scorer import Scorer
+from sushi_go.scorer import Scorer
 
 class Player:
     is_ready = False
     name = None
     
-    def __init__(self):
+    def __init__(self, name):
         self.played_cards = []
         self.current_hand = []
+        self.name = name
 
     def play_card(self, card):
         self.played_cards.append(card)

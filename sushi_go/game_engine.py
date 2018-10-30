@@ -1,6 +1,6 @@
-from scorer import Scorer
-from deck import Deck
-from player import Player
+from sushi_go.scorer import Scorer
+from sushi_go.deck import Deck
+from sushi_go.player import Player
 
 class GameEngine:
     max_rounds = 3
@@ -15,13 +15,10 @@ class GameEngine:
         self.scorer = Scorer()
         self.scores = {}
 
-    def add_player(self):
+    def add_player(self, player):
         if self.players == None:
             self.players = []
-        new_player = Player()
-        self.players.append(new_player)
-        new_player.name = "Player " + str(len(self.players))
-        return new_player
+        self.players.append(player)
 
     def remove_player(self, player):
         index = self.players.index(player)

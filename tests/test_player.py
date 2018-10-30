@@ -5,7 +5,7 @@ from sushi_go.deck import SquidNigiriCard, WasabiCard, TempuraCard
 class TestPlayer(unittest.TestCase):
     
     def setUp(self):
-        self.player = Player()
+        self.player = Player('Bar')
         self.wasabi_card = WasabiCard()
         self.squid_nigiri_card = SquidNigiriCard()
         
@@ -41,8 +41,3 @@ class TestPlayer(unittest.TestCase):
 
         self.assertEqual(len(self.player.played_cards), 1)
         self.assertEqual(self.squid_nigiri_card.wasabi, self.wasabi_card)
-
-
-
-if __name__ == "__main__":
-    unittest.main()

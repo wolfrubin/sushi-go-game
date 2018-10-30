@@ -1,14 +1,12 @@
-from game_engine import GameEngine
+from sushi_go.game_engine import GameEngine
+from sushi_go.player import Player
 
 if __name__ == "__main__":
     print("Starting game")
     game_engine = GameEngine()
 
-    player_one = game_engine.add_player()
-    player_two = game_engine.add_player()
-
-    player_one.name = "Christian"
-    player_two.name = "Brandon"
+    game_engine.add_player(Player("Christian"))
+    game_engine.add_player(Player("Brandon"))
 
     game_engine.start_game()
 
@@ -16,7 +14,7 @@ if __name__ == "__main__":
         for player in game_engine.players:
             print(str(player.name) + " it's your turn.")
             print("Your cards are " + str(player.current_hand))
-            card_index = int(raw_input("Please input an index to play a card: "))
+            card_index = int(input("Please input an index to play a card: "))
             game_engine.play_card(player, player.current_hand[card_index])
             game_engine.currently_played()
         

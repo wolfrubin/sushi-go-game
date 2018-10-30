@@ -1,4 +1,4 @@
-from cards import *
+from sushi_go.cards import *
 
 CARD_TYPE_DISTRIBUTION = {
     TempuraCard : 14,

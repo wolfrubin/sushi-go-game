@@ -20,3 +20,6 @@ An implementation of the card game SushiGo! in python.
 3. Second players go, input the index of the card they wish to play from their hand
 4. Play until all hands are complete
 5. Highest score is the winner
+
+### Run tests
+`python3 -m unittest discover tests`
