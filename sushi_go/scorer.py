@@ -1,3 +1,5 @@
+from sushi_go.deck import MakiCard
+
 
 def get_largest_and_second_largest(array):
     unique_vals = set(array)
@@ -65,7 +67,7 @@ class Scorer:
         return sum(map(lambda x : x.number_of_rolls, maki_cards))
 
     def maki_from_hand(self, hand):
-        return filter(lambda x: (x.card_type == "MakiCard"), hand)
+        return filter(lambda x: (issubclass(x.__class__, MakiCard)), hand)
 
     def score_for_independent_hand(self, hand):
         # This works for now but will need abstracting when further cards are introduced

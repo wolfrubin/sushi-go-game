@@ -1,24 +1,24 @@
+"""Here we test the core game engine. This class serves as the main access
+point to interact with the game. When the time comes to make an API on
+top of the game. This should be the main object interacted with.
+
+As much game logic as possible should remain hidden behind the game engine class.
+"""
 import unittest
 import random
 from sushi_go.game_engine import GameEngine
 from sushi_go.player import Player
 
-"""
-Here we test the core game engine. This class serves as the main access
-point to interact with the game. When the time comes to make an API on
-top of the game. This should be the main object interacted with.
-
-Everything else should remain hidden behind the game engine class.
-"""
 
 class TestGameEngine(unittest.TestCase):
     
     def setUp(self):
-        self.game_engine = GameEngine()
-        self.player_one = Player('Test one')
-        self.player_two = Player('Test two')
-        self.game_engine.add_player(self.player_one)
-        self.game_engine.add_player(self.player_two)
+        self.game_engine = GameEngine('testname')
+        self.game_engine.add_player_named('Test one')
+        self.game_engine.add_player_named('Test two')
+
+        self.player_one = self.game_engine.players[0]
+        self.player_two = self.game_engine.players[1]
         
     def test_start_game_in_progress(self):
         """
@@ -37,7 +37,7 @@ class TestGameEngine(unittest.TestCase):
         """
         self.game_engine.remove_player(self.player_one)
 
-        self.assertEqual(self.game_engine.number_of_players(), 1)
+        self.assertEqual(self.game_engine.number_of_players, 1)
 
         with self.assertRaises(Exception) as context:
             self.game_engine.start_game()
@@ -60,7 +60,7 @@ class TestGameEngine(unittest.TestCase):
         game and that we have the correct number of cards per player.
         We also need to make sure that the hands have been assigned.
         """
-        self.assertEqual(self.game_engine.number_of_players(), 2)
+        self.assertEqual(self.game_engine.number_of_players, 2)
 
         self.game_engine.start_game()
 
@@ -90,8 +90,7 @@ class TestGameEngine(unittest.TestCase):
         """
         self.game_engine.start_game()
         
-        card = self.player_one.current_hand[0]
-        self.game_engine.play_card(self.player_one, card)
+        self.game_engine.select_and_play(self.player_one.name, 0)
 
         self.assertEqual(len(self.player_one.current_hand), 9)
         self.assertEqual(len(self.player_one.played_cards), 1)
@@ -104,13 +103,10 @@ class TestGameEngine(unittest.TestCase):
         """
         self.game_engine.start_game()
 
-        card_p1 = self.player_one.current_hand[0]
-        card_p2 = self.player_two.current_hand[1]
-
-        self.game_engine.play_card(self.player_one, card_p1)
+        self.game_engine.select_and_play(self.player_one.name, 0)
         self.assertFalse(self.game_engine.are_players_ready_next_card())
 
-        self.game_engine.play_card(self.player_two, card_p2)
+        self.game_engine.select_and_play(self.player_two.name, 1)
         self.assertTrue(self.game_engine.are_players_ready_next_card())
 
     def test_exchange_hands(self):
@@ -134,12 +130,12 @@ class TestGameEngine(unittest.TestCase):
         We test exchanging five players hands.
         [1,2,3,4,5] => [2,3,4,5,1]
         """
-        player_three = Player('Three')
-        player_four = Player('Four')
-        player_five = Player('Five')
-        self.game_engine.add_player(player_three)
-        self.game_engine.add_player(player_four)
-        self.game_engine.add_player(player_five)
+        self.game_engine.add_player_named('Three')
+        self.game_engine.add_player_named('Four')
+        self.game_engine.add_player_named('Five')
+
+        player_four = self.game_engine.players[3]
+        player_five = self.game_engine.players[4]
 
         self.game_engine.start_game()
 
@@ -157,10 +153,11 @@ class TestGameEngine(unittest.TestCase):
         default order is set. [3,4,1,2] => [4,1,2,3].
         I.E. player_three's hand should go to player four.
         """
-        player_three = Player('Three')
-        player_four = Player('Four')
-        self.game_engine.add_player(player_three)
-        self.game_engine.add_player(player_four)
+        self.game_engine.add_player_named('Three')
+        self.game_engine.add_player_named('Four')
+
+        player_three = self.game_engine.players[2]
+        player_four = self.game_engine.players[3]
 
         self.game_engine.set_hand_exchange_order([player_three, player_four, self.player_one, self.player_two])
         
@@ -195,21 +192,25 @@ class TestGameEngine(unittest.TestCase):
         self.assertEqual(self.player_one.current_hand, p2_hand)
         self.assertEqual(self.player_two.current_hand, p1_hand)
 
-    def test_exchange_is_ready_reset(self):
+    def test_exchange_can_play_reset(self):
         """
-        We test that once the is_ready flag is properly reset once 
+        We test that once the can_play flag is properly reset once 
         hands have been exchanged between players.
         """
         self.game_engine.start_game()
 
-        self.game_engine.play_card(self.player_one, self.player_one.current_hand[0])
-        self.assertTrue(self.player_one.is_ready)
-        self.assertFalse(self.player_two.is_ready)
-        self.game_engine.try_exchange_hands()
+        self.game_engine.select_and_play(self.player_one.name, 0)
+        self.assertFalse(self.player_one.can_play)
+        self.assertTrue(self.player_two.can_play)
+        hands_exchanged = self.game_engine.try_exchange_hands()
 
-        self.game_engine.play_card(self.player_two, self.player_two.current_hand[0])
-        self.assertTrue(self.player_two.is_ready)
-        self.game_engine.try_exchange_hands()
+        self.assertFalse(hands_exchanged)
+
+        self.game_engine.select_and_play(self.player_two.name, 0)
+        self.assertFalse(self.player_two.can_play)
+        hands_exchanged = self.game_engine.try_exchange_hands()
+
+        self.assertTrue(hands_exchanged)
 
         self.assertFalse(self.game_engine.are_players_ready_next_card())
 

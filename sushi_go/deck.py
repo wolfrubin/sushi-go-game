@@ -1,5 +1,6 @@
 import random
 
+
 class Deck(object):
     def __init__(self):
         """
@@ -8,28 +9,8 @@ class Deck(object):
         """
         self.cards = []
 
-        for i in range(0,14):
-            tc = TempuraCard()
-            dc = DumplingCard()
-            sc = SashimiCard()
-            self.cards.append(tc)
-            self.cards.append(dc)
-            self.cards.append(sc)
-
-        for i in range(0,6):
-            en = EggNigiriCard()
-            saln = SalmonNigiriCard()
-            sqn = SquidNigiriCard()
-            wc = WasabiCard()
-            self.cards.append(en)
-            self.cards.append(saln)
-            self.cards.append(sqn)
-            self.cards.append(wc)
-
-        for i in range(1,4):
-            for j in range(0,4):
-                mc = MakiCard(i)
-                self.cards.append(mc)
+        for card_type, number in CARD_TYPE_DISTRIBUTION.items():
+            self.cards += (card_type() * number)
 
     def draw_random_cards(self, number_of_cards):
         if number_of_cards > len(self.cards):
@@ -51,6 +32,15 @@ class Card(object):
         if cls is Card:
             raise TypeError("Base card objects cannot be created.")
         return object.__new__(cls)
+
+    def __mul__(self, other):
+        # Multiplying a card by an integer returns a list of cards
+        try:
+            int(other)
+        except ValueError: 
+            pass
+        else:
+            return [self.__class__() for _ in range(other)] 
 
     def __init__(self, *args, **kwargs):
         self.card_type = self.__class__.__name__
@@ -79,9 +69,33 @@ class EggNigiriCard(NigiriCard):
 class WasabiCard(Card):
     pass
 
-class MakiCard(Card):
-    number_of_rolls = None
 
-    def __init__(self, number_of_rolls, *args, **kwargs):
-        self.number_of_rolls = number_of_rolls
-        super(MakiCard, self).__init__(*args, **kwargs)
+class MakiCard(Card):
+    
+    def __new__(cls, *args, **kwargs):
+        if cls is MakiCard:
+            raise TypeError("MakiCard objects cannot be created. Use a subtype instead.")
+        return object.__new__(cls)
+
+
+class OneRollMakiCard(MakiCard):
+    number_of_rolls = 1
+
+class TwoRollMakiCard(MakiCard):
+    number_of_rolls = 2
+
+class ThreeRollMakiCard(MakiCard):
+    number_of_rolls = 3
+
+CARD_TYPE_DISTRIBUTION = {
+    TempuraCard: 14,
+    SashimiCard: 14,
+    DumplingCard: 14,
+    SquidNigiriCard: 5,
+    SalmonNigiriCard: 5,
+    EggNigiriCard: 5,
+    WasabiCard: 5,
+    OneRollMakiCard: 4,
+    TwoRollMakiCard: 4,
+    ThreeRollMakiCard: 4,
+}

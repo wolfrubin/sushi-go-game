@@ -2,24 +2,18 @@
 An implementation of the card game SushiGo! in python.
 
 ### Still to do
-1. Add the ability to decide the number of players and include their names.  
-2. Add the event loop ability to play a wasabi card onto a nigiri card.  
-3. Fix the way that the initial deck is generated.  
-4. Remove the magic numbers from the code around scoring.  
-5. Move the add wasabi logic to the nigiri cards.  
-6. Add the chopstick type card.  
-7. GameEngine does too much. Consider refactoring.
-
-### Future work
-1. Add a web API.  
-2. Build a mobile app.  
+1. Move game logic from server code to game engine code.
+2. Fix the way that the initial deck is generated.
+3. Add the ability to add wasabi to nigiri cards in server.
+4. Add the chopstick type card.
 
 ### How to run
-1. From the main directory run `python -m sushi_go.main` starts the game with two players
-2. First players go, they input the index of the card they wish to play from their hand
-3. Second players go, input the index of the card they wish to play from their hand
-4. Play until all hands are complete
-5. Highest score is the winner
+1. From the main directory run `python -m server.game_server`. This starts the game server on port 4136
+2. Use the sushi_go_client to send messages to the game server
+3. To play a game you need to first create a lobby (CREATE_GAME)
+4. Then have other people join the lobby (JOIN_GAME)
+5. Once there are 2 or more players you can start a game (START_GAME)
+6. Each player can idependently play their cards (PLAY_CARD)
 
 ### Run tests
 `python3 -m unittest discover tests`

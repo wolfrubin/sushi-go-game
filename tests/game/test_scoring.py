@@ -1,11 +1,10 @@
-import unittest
-from sushi_go.scorer import Scorer
-from sushi_go.deck import TempuraCard, DumplingCard, SashimiCard, EggNigiriCard, SalmonNigiriCard, SquidNigiriCard, WasabiCard, NigiriCard, MakiCard
-
-"""
-Here we test the scoring class. We test all the possible individual
+"""Here we test the scoring class. We test all the possible individual
 card scoring methods and the hand scoring mechanism.
 """
+import unittest
+from sushi_go.scorer import Scorer
+from sushi_go.deck import TempuraCard, DumplingCard, SashimiCard, EggNigiriCard, SalmonNigiriCard, SquidNigiriCard, WasabiCard, NigiriCard, OneRollMakiCard, TwoRollMakiCard, ThreeRollMakiCard
+
 
 class TestScoring(unittest.TestCase):
 
@@ -90,17 +89,17 @@ class TestScoring(unittest.TestCase):
         the total number of Maki to be scored at a later date. This also
         exercises the roll_count_from_maki function.
         """
-        mk_1 = MakiCard(3)
-        mk_2 = MakiCard(2)
+        mk_1 = ThreeRollMakiCard()
+        mk_2 = TwoRollMakiCard()
         hand_1 = [mk_1, mk_2]
 
-        mk_3 = MakiCard(1)
-        mk_4 = MakiCard(2)
+        mk_3 = OneRollMakiCard()
+        mk_4 = TwoRollMakiCard()
         hand_2 = [mk_3, mk_4]
 
-        mk_5 = MakiCard(1)
-        mk_6 = MakiCard(3)
-        mk_7 = MakiCard(3)
+        mk_5 = OneRollMakiCard()
+        mk_6 = ThreeRollMakiCard()
+        mk_7 = ThreeRollMakiCard()
         hand_3 = [mk_5, mk_6, mk_7]
 
         self.assertEqual(self.scorer.calculate_maki_roll_count([hand_1, hand_2, hand_3]), [5,3,7])
@@ -110,8 +109,8 @@ class TestScoring(unittest.TestCase):
         This function is needed in Maki scoring to extract only the maki cards
         from a players hand.
         """
-        mk_1 = MakiCard(1)
-        mk_2 = MakiCard(1)
+        mk_1 = OneRollMakiCard()
+        mk_2 = OneRollMakiCard()
         tc = TempuraCard()
         wc = WasabiCard()
 

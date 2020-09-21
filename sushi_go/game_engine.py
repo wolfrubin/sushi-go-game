@@ -10,20 +10,22 @@ class GameEngine:
     hand_exchange_order = None
     in_progress = False
 
-    def __init__(self):
+    def __init__(self, game_name):
         self.deck = Deck()
         self.scorer = Scorer()
         self.scores = {}
+        self.game_name = game_name
 
-    def add_player(self, player):
+    def add_player_named(self, player_name):
         if self.players == None:
             self.players = []
-        self.players.append(player)
+        self.players.append(Player(player_name))
 
     def remove_player(self, player):
         index = self.players.index(player)
         del self.players[index]
 
+    @property
     def number_of_players(self):
         return len(self.players)
 
@@ -50,6 +52,7 @@ class GameEngine:
         for player in self.players:
             player.played_cards = []
         self.draw_cards_for_players(self.players)
+        return self.scores
         
     def set_hand_exchange_order(self, hand_exchange_order = None):
         if hand_exchange_order is None:
@@ -62,19 +65,20 @@ class GameEngine:
             cards = self.deck.draw_random_cards(self.cards_per_player)
             player.current_hand = cards
 
-    def select_and_play(self, player):
-        try:
-            card_index = int(input("Please input an index to play a card: "))
-            card = player.current_hand[card_index]
-        except (SyntaxError, ValueError, NameError, IndexError):
-            print('Invalid input, please try again')
-            self.select_and_play(player)
-        else:
-            player.play_card(card)
+    def select_and_play(self, player_name, index):
+        player = [player for player in self.players if player.name == player_name][0]
+        card = player.current_hand[index]
+        player.play_card(card)
+        return self.progress_game()
+
+    def progress_game(self):
+        self.try_exchange_hands()
+        if self.is_round_complete() is True:
+            return self.end_current_round()
     
     def are_players_ready_next_card(self):
         for player in self.players:
-            if player.is_ready == False:
+            if player.can_play == True:
                 return False
         return True
 
@@ -83,18 +87,18 @@ class GameEngine:
         Use this method when actually playing the game. This prevents
         hands being exchanged prematurely and resets the ready flag.
         """
-        if self.are_players_ready_next_card() is False:
-            return None
+        if not self.are_players_ready_next_card():
+            return False
         self.exchange_hands()
         self.set_players_unready()
+        return True
 
     def exchange_hands(self):
         """
         Here we sequentially swap hands between player pairs.
         [1,2,3,4] => [2,3,4,1]
-        Feels inefficient. Should be able to improve.
 
-        index of card = index of card + 1 MOD len(players)
+        index of hand = index of hand + 1 MOD len(players)
         """
         for index, player in enumerate(self.hand_exchange_order[:-1]):
             next_index = index + 1
@@ -102,7 +106,7 @@ class GameEngine:
 
     def set_players_unready(self):
         for player in self.players:
-            player.is_ready = False
+            player.can_play = True
 
     def swap_hands(self, player_one, player_two):
         player_one.current_hand, player_two.current_hand = player_two.current_hand, player_one.current_hand
@@ -120,14 +124,18 @@ class GameEngine:
     def end_current_round(self):
         self.current_round += 1
         self.record_scores()
+        if self.is_game_complete():
+            return self.run_game_complete()
+        else:
+            return self.start_round()
 
     def record_scores(self):
         scores = self.scorer.score_for_round(self.players)
         for idx, score in enumerate(scores):
             try:
-               self.scores[self.players[idx]].append(score) 
+               self.scores[self.players[idx].name].append(score) 
             except Exception as e:
-                self.scores[self.players[idx]] = [score]
+                self.scores[self.players[idx].name] = [score]
 
     def is_game_complete(self):
         if self.current_round == self.max_rounds:
@@ -135,8 +143,10 @@ class GameEngine:
         return False
 
     def run_game_complete(self):
-        print("Game complete")
         end_game_total_scores = {}
         for player in self.players:
             end_game_total_scores[player.name] = sum(self.scores[player])
-        print(end_game_total_scores)
+        return end_game_total_scores
+
+    def __repr__(self):
+        return f'Name: {self.game_name} \n Players: {self.players} \n Current Round: {self.current_round}'

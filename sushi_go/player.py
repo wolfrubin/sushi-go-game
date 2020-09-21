@@ -1,7 +1,10 @@
 from sushi_go.scorer import Scorer
 
+class PlayerCannotPlayException(Exception):
+    pass
+
 class Player:
-    is_ready = False
+    can_play = True
     name = None
     
     def __init__(self, name):
@@ -10,13 +13,14 @@ class Player:
         self.name = name
 
     def play_card(self, card):
+        if not self.can_play:
+            raise PlayerCannotPlayException()
         self.played_cards.append(card)
         del self.current_hand[self.current_hand.index(card)]
-        self.is_ready = True
+        self.can_play = False
 
     def add_wasabi(self, nigiri_card, wasabi_card):
-        """
-        This method is in place for wasabi and nigiri cards.
+        """This method is in place for wasabi and nigiri cards.
         A nigiri type card can have a wasabi card placed on it, 
         this doubles the score of the nigiri. (Scorer).
 
@@ -32,6 +36,7 @@ class Player:
 
         nigiri_card.wasabi = wasabi_card
         del self.played_cards[self.played_cards.index(wasabi_card)]
+        self.can_play = False
 
     def __repr__(self):
         return self.name
