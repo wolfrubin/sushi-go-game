@@ -1,7 +1,36 @@
-*.pyc
+*.py[co]
 .DS_Store
 .coverage
 .idea
-SushiGoTM-RULES.pdf
+*.pem
 htmlcov/
 venv/
+
+# dependencies
+sugoui/node_modules
+sugoui/.pnp
+sugoui/.pnp.js
+
+# testing
+sugoui/coverage
+
+# next.js
+sugoui/.next/
+sugoui/out/
+
+# production
+sugoui/build
+
+# debug
+sugoui/npm-debug.log*
+sugoui/yarn-debug.log*
+sugoui/yarn-error.log*
+
+# local env files
+sugoui/.env.local
+sugoui/.env.development.local
+sugoui/.env.test.local
+sugoui/.env.production.local
+
+# vercel
+sugoui/.vercel
