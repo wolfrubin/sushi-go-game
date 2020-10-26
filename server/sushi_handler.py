@@ -31,16 +31,17 @@ PARAMS:
 """
 import asyncio
 import json
+from abc import ABC, abstractmethod
 from typing import List
 
-from server.base_handler import BaseHandler
 from sushi_go.game_engine import GameEngine
-
-
-class SushiGoJSONEncoder(json.JSONEncoder):
-
-    def default(self, obj):
-        return str(obj)
+from server.sugo_request import SuGoRequest
+from server.exceptions import (
+    GameAlreadyExistsError,
+    GameDoesNotExistError,
+    GameInProgressError,
+    PlayerAlreadyJoinedError
+)
 
 
 CREATE_GAME = b'CREATE_GAME'
@@ -49,47 +50,69 @@ START_GAME = b'START_GAME'
 PLAY_CARD = b'PLAY_CARD'
 GAME_STATE = b'GAME_STATE'
 
-GAME_DICT = {}
 
-
-class SushiHandler(BaseHandler):
+class SuGoGameDict:
     
-    async def handle(self, body: List[bytes]):
-        print('Sushi Handler')
-        action_name = body[1]
-        print('action name {}'.format(action_name.decode('utf-8')))
-        game_name = body[2]
-        game_name = game_name.decode('utf-8')
-        print('game named: {}'.format(game_name))
-        player_name = body[3]
-        player_name = player_name.decode('utf-8')
-        print('player named: {}'.format(player_name))
+    def __init__(self):
+        self.underlying_dict = {}
 
-        if action_name == CREATE_GAME:
-            engine = GameEngine(game_name)
-            engine.add_player_named(player_name)
-            GAME_DICT[game_name] = engine
-            self.writer.write(b'game started ')
-        elif action_name == JOIN_GAME:
-            engine = GAME_DICT[game_name]
-            engine.add_player_named(player_name)
-            self.writer.write(b'joined game')
-        elif action_name == GAME_STATE:
-            engine = GAME_DICT[game_name]
-            hand_for_player =[x.current_hand for x in engine.players if x.name == player_name][0]
-            self.writer.write(str(hand_for_player).encode('utf-8'))
-        elif action_name == START_GAME:
-            engine = GAME_DICT[game_name]
+    def __getitem__(self, name):
+        try:
+            return self.underlying_dict[name]
+        except KeyError:
+            raise GameDoesNotExistError(name)
+
+    def __setitem__(self, key, item):
+        if key in self.underlying_dict:
+            raise GameAlreadyExistsError(key)
+        else:
+            self.underlying_dict[key] = item
+
+
+GAME_DICT = SuGoGameDict()
+
+
+class CreateGameHandler:
+
+    def handle(self, req: SuGoRequest):
+        engine = GameEngine(req.game_name)
+        engine.add_player_named(req.player)
+        GAME_DICT[req.game_name] = engine
+        return 'game created'
+
+
+class JoinGameHandler:
+
+    def handle(self, req: SuGoRequest):
+        engine = GAME_DICT[req.game_name]
+        try:
+            engine.add_player_named(req.player)
+        except Exception:
+            raise PlayerAlreadyJoinedError(req.game_name, req.player)
+        return 'joined game'
+
+class GameStateHandler:
+
+    def handle(self, req: SuGoRequest):
+        engine = GAME_DICT[req.game_name]
+        hand_for_player = [x.current_hand for x in engine.players if x.name == req.player]
+        return str(hand_for_player)
+
+class StartGameHandler:
+
+    def handle(self, req: SuGoRequest):
+        engine = GAME_DICT[req.game_name]
+        try:
             engine.start_game()
-            engine.start_round()
-        elif action_name == PLAY_CARD:
-            engine = GAME_DICT[game_name]
-            index = int(body[4])
-            index = int(index)
-            print('playing index {}'.format(index))
-            vals = engine.select_and_play(player_name, index)
-            print(vals)
-            bvals = json.dumps(vals, cls=SushiGoJSONEncoder).encode('utf-8')
-            self.writer.write(bvals)
-        await self.writer.drain()
-        self.writer.close()
+        except Exception:
+            raise GameInProgressError(req.game_name)
+        engine.start_round()
+        return 'game started'
+
+class PlayCardHandler:
+
+    def handle(self, req: SuGoRequest):
+        engine = GAME_DICT[req.game_name]
+        index = int(req.body)
+        vals = engine.select_and_play(req.player, index)
+        return 'card played'

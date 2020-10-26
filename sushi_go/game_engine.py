@@ -15,10 +15,14 @@ class GameEngine:
         self.scorer = Scorer()
         self.scores = {}
         self.game_name = game_name
+        self.players = []
+
+    def is_player_in(self, player_name):
+        return player_name in map(lambda x: x.name, self.players)
 
     def add_player_named(self, player_name):
-        if self.players == None:
-            self.players = []
+        if self.is_player_in(player_name):
+            raise Exception("A player with that name has already joined the game")
         self.players.append(Player(player_name))
 
     def remove_player(self, player):
