@@ -6,7 +6,7 @@ An implementation of the card game SushiGo! in python.
 1. Move game logic from server code to game engine code.
 
 #### Server (/server)
-1. Fix the websocket implementation to work with the game engine
+1. Persist games across restarts (currently in memory)
 
 #### React UI (/sugoui)
 1. Splash page to request users name
@@ -22,6 +22,16 @@ An implementation of the card game SushiGo! in python.
 4. Then have other people join the lobby (JOIN_GAME)
 5. Once there are 2 or more players you can start a game (START_GAME)
 6. Each player can idependently play their cards (PLAY_CARD). The body is a card index e.g. `3`, or two comma separated indexes e.g. `3,5` to play two cards using a chopsticks card already on the table
+
+### Playing from a browser (WebSocket gateway)
+`python -m server.gateway` serves the game to browsers over a WebSocket (JSON messages, port 4137) and
+also starts the TCP server so both share the same games. It needs `pip install websockets`.
+The message format is documented at the top of `server/gateway.py`. Joining a game returns a secret token
+that must be sent with every later action for that player.
+
+### Deploying (no Docker)
+See `deploy/`: `sushi-go.service` is a hardened systemd unit for the game server and `Caddyfile.snippet`
+proxies `wolfrub.in/sushi/ws` to it and serves the static UI from `wolfrub.in/sushi/`.
 
 ### Run tests
 `python3 -m unittest discover -s tests -t .` (run from the repo root)

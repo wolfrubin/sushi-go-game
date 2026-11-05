@@ -1,0 +1,36 @@
+# systemd unit for the Sushi Go game server (WebSocket gateway).
+#
+# Install:
+#   sudo useradd --system --home /opt/sushi-go-game sushigo   # or use DynamicUser below
+#   sudo git clone https://github.com/wolfrubin/sushi-go-game /opt/sushi-go-game
+#   cd /opt/sushi-go-game && python3 -m venv venv && venv/bin/pip install websockets
+#   sudo cp deploy/sushi-go.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now sushi-go
+#
+# The gateway only listens on 127.0.0.1; Caddy is the public front door
+# (see deploy/Caddyfile.snippet). Games live in memory, so restarting the
+# service ends any games in progress.
+[Unit]
+Description=Sushi Go game server
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/sushi-go-game
+ExecStart=/opt/sushi-go-game/venv/bin/python -m server.gateway --no-tcp --ws-port 4137 --origin https://wolfrub.in
+Restart=on-failure
+RestartSec=2
+
+# Hardening: the server needs no files, no privileges and no outbound network
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

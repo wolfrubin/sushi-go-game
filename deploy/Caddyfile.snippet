@@ -1,0 +1,18 @@
+# Add inside the existing wolfrub.in site block of your Caddyfile.
+# Order matters: the websocket route must come before the static file route.
+#
+# Static UI: build with   cd sugoui && SUGO_BASE_PATH=/sushi npm run build
+# then copy sugoui/out/ to /srv/sushi-go on the server.
+
+	# Game server (WebSocket). Caddy proxies upgrades automatically and
+	# terminates TLS, so the browser connects to wss://wolfrub.in/sushi/ws
+	handle /sushi/ws {
+		reverse_proxy 127.0.0.1:4137
+	}
+
+	# Static UI at wolfrub.in/sushi/
+	redir /sushi /sushi/
+	handle_path /sushi/* {
+		root * /srv/sushi-go
+		file_server
+	}
