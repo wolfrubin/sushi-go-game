@@ -48,11 +48,11 @@ class Scorer:
 
         if calc_first_place is not False:
             for first_place_loc in first_places:
-                scores[first_place_loc] = 6/len(first_places)
+                scores[first_place_loc] = 6//len(first_places)
         
         if calc_second_place is not False:
             for second_place_loc in second_places:
-                scores[second_place_loc] = 3/len(second_places)
+                scores[second_place_loc] = 3//len(second_places)
 
         return scores        
 

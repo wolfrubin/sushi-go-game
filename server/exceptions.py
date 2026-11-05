@@ -25,3 +25,10 @@ class PlayerAlreadyJoinedError(SuGoError):
     
     def __init__(self, game_name, player_name):
         self.message = f"Game named \"{game_name}\" already has player named \"{player_name}\""
+
+
+
+class InvalidRequestError(SuGoError):
+
+    def __init__(self, detail):
+        self.message = f"Invalid request: {detail}"
