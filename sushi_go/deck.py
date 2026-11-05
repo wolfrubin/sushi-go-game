@@ -45,6 +45,10 @@ class Card(object):
     def __init__(self, *args, **kwargs):
         self.card_type = self.__class__.__name__
 
+    def to_dict(self):
+        """JSON friendly description of the card for clients."""
+        return {"type": self.card_type}
+
 class TempuraCard(Card):
     pass
 
@@ -56,6 +60,9 @@ class DumplingCard(Card):
 
 class NigiriCard(Card):
     wasabi = None
+
+    def to_dict(self):
+        return {"type": self.card_type, "wasabi": self.wasabi is not None}
 
 class SquidNigiriCard(NigiriCard):
     pass
@@ -82,6 +89,9 @@ class MakiCard(Card):
         if cls is MakiCard:
             raise TypeError("MakiCard objects cannot be created. Use a subtype instead.")
         return object.__new__(cls)
+
+    def to_dict(self):
+        return {"type": self.card_type, "rolls": self.number_of_rolls}
 
 
 class OneRollMakiCard(MakiCard):

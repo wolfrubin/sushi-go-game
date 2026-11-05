@@ -19,6 +19,7 @@ JOIN_GAME
 START_GAME
 PLAY_CARD
 GAME_STATE
+LIST_GAMES
 
 byte message (all utf-8) format:
 ACTION_TYPE: CREATE_GAME/JOIN_GAME/START_GAME/PLAY_CARD/GAME_STATE
@@ -51,6 +52,9 @@ JOIN_GAME = b'JOIN_GAME'
 START_GAME = b'START_GAME'
 PLAY_CARD = b'PLAY_CARD'
 GAME_STATE = b'GAME_STATE'
+LIST_GAMES = b'LIST_GAMES'
+
+MAX_PLAYERS = 5
 
 
 class SuGoGameDict:
@@ -70,6 +74,18 @@ class SuGoGameDict:
         else:
             self.underlying_dict[key] = item
 
+    def __contains__(self, name):
+        return name in self.underlying_dict
+
+    def __len__(self):
+        return len(self.underlying_dict)
+
+    def items(self):
+        return list(self.underlying_dict.items())
+
+    def remove(self, name):
+        self.underlying_dict.pop(name, None)
+
 
 GAME_DICT = SuGoGameDict()
 
@@ -87,6 +103,10 @@ class JoinGameHandler:
 
     def handle(self, req: SuGoRequest):
         engine = GAME_DICT[req.game_name]
+        if engine.in_progress:
+            raise GameInProgressError(req.game_name)
+        if engine.number_of_players >= MAX_PLAYERS:
+            raise InvalidRequestError(f"game \"{req.game_name}\" is full ({MAX_PLAYERS} players)")
         try:
             engine.add_player_named(req.player)
         except Exception:
@@ -94,11 +114,28 @@ class JoinGameHandler:
         return 'joined game'
 
 class GameStateHandler:
+    """Returns JSON describing the game from the requesting player's point
+    of view (see GameEngine.state_for)."""
 
     def handle(self, req: SuGoRequest):
         engine = GAME_DICT[req.game_name]
-        hand_for_player = [x.current_hand for x in engine.players if x.name == req.player]
-        return str(hand_for_player)
+        if not engine.is_player_in(req.player):
+            raise InvalidRequestError(f"\"{req.player}\" is not in game \"{req.game_name}\"")
+        return json.dumps(engine.state_for(req.player))
+
+
+class ListGamesHandler:
+    """Returns JSON listing every game and who is in it."""
+
+    def handle(self, req: SuGoRequest):
+        return json.dumps([
+            {
+                "name": name,
+                "players": [player.name for player in engine.players],
+                "status": engine.status(),
+            }
+            for name, engine in GAME_DICT.items()
+        ])
 
 class StartGameHandler:
 

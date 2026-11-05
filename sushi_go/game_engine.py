@@ -16,6 +16,9 @@ class GameEngine:
         self.scores = {}
         self.game_name = game_name
         self.players = []
+        self.finished = False
+        self.final_scores = None
+        self.last_round = None
 
     def is_player_in(self, player_name):
         return player_name in map(lambda x: x.name, self.players)
@@ -72,7 +75,12 @@ class GameEngine:
     def _player_named(self, player_name):
         return [player for player in self.players if player.name == player_name][0]
 
+    def _check_playable(self):
+        if self.finished:
+            raise Exception("The game is finished.")
+
     def select_and_play(self, player_name, index):
+        self._check_playable()
         player = self._player_named(player_name)
         card = player.current_hand[index]
         player.play_card(card)
@@ -80,6 +88,7 @@ class GameEngine:
 
     def select_and_play_two(self, player_name, first_index, second_index):
         """Play two cards in one turn using a chopsticks card."""
+        self._check_playable()
         player = self._player_named(player_name)
         if first_index == second_index:
             raise Exception("Cannot play the same card twice.")
@@ -142,6 +151,7 @@ class GameEngine:
         self.current_round += 1
         self.record_scores()
         self.collect_puddings()
+        self.last_round = self.summarise_round()
         if self.is_game_complete():
             return self.run_game_complete()
         else:
@@ -158,6 +168,54 @@ class GameEngine:
             player.pudding_count += sum(
                 1 for card in player.played_cards if isinstance(card, PuddingCard))
 
+    def summarise_round(self):
+        """What was on each table and what it scored, kept after the tables
+        are cleared for the next round so clients can show the result."""
+        return {
+            "number": self.current_round,
+            "players": {
+                player.name: {
+                    "played": [card.to_dict() for card in player.played_cards],
+                    "score": self.scores[player.name][-1],
+                }
+                for player in self.players
+            },
+        }
+
+    def status(self):
+        if self.finished:
+            return "finished"
+        return "playing" if self.in_progress else "lobby"
+
+    def state_for(self, player_name):
+        """JSON friendly view of the game for one player. Only that player's
+        own hand is included, opponents only expose how many cards they hold."""
+        me = self._player_named(player_name)
+        playing = self.status() == "playing"
+        return {
+            "game": self.game_name,
+            "status": self.status(),
+            "round": min(self.current_round + (0 if self.finished else 1), self.max_rounds),
+            "max_rounds": self.max_rounds,
+            "you": me.name,
+            "hand": [card.to_dict() for card in me.current_hand],
+            "can_play": playing and me.can_play,
+            "can_use_chopsticks": playing and me.can_play and me.has_chopsticks and len(me.current_hand) >= 2,
+            "players": [
+                {
+                    "name": player.name,
+                    "played": [card.to_dict() for card in player.played_cards],
+                    "hand_size": len(player.current_hand),
+                    "has_played": playing and not player.can_play,
+                    "pudding": player.pudding_count,
+                    "scores": list(self.scores.get(player.name, [])),
+                }
+                for player in self.players
+            ],
+            "last_round": self.last_round,
+            "final_scores": self.final_scores,
+        }
+
     def is_game_complete(self):
         if self.current_round == self.max_rounds:
             return True
@@ -169,6 +227,8 @@ class GameEngine:
         end_game_total_scores = {}
         for player, pudding_score in zip(self.players, pudding_scores):
             end_game_total_scores[player.name] = sum(self.scores[player.name]) + pudding_score
+        self.finished = True
+        self.final_scores = end_game_total_scores
         return end_game_total_scores
 
     def __repr__(self):
