@@ -13,7 +13,11 @@ An implementation of the card game SushiGo! in python.
 2. Build a working UI for joining, browsing and initialising a game
 
 ### SuGoUi module isn't ready for use yet. Currently a work in progress
-`npm run dev` will start a dev server
+Next.js 16 / React 19 / Bootstrap 5 (Bootswatch Darkly). From `sugoui/`:
+- `npm install`
+- `npm run dev` starts a dev server
+- `npm run build` exports static files to `sugoui/out` (no Node server needed to host them).
+  Set `SUGO_BASE_PATH=/sushi` to build for serving from a sub path.
 
 ### How to run
 1. From the main directory run `python -m server.game_server`. This starts the game server on port 4136

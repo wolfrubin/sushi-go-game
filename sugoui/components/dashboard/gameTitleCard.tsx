@@ -1,5 +1,5 @@
 import React from 'react';
-import { Badge, Card, Col, ListGroup, Row } from 'react-bootstrap';
+import { Card, ListGroup } from 'react-bootstrap';
 import { Player, SushiGame } from "../../interfaces";
 
 
