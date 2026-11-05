@@ -48,6 +48,8 @@ class Player:
             raise Exception("Cannot play the same card twice.")
         if not self.has_chopsticks:
             raise Exception("Cannot play two cards without chopsticks.")
+        if first_card not in self.current_hand or second_card not in self.current_hand:
+            raise ValueError("Both cards must be in the player's hand.")
         chopsticks = next(c for c in self.played_cards if isinstance(c, ChopsticksCard))
         self._play_from_hand(first_card)
         self._play_from_hand(second_card)

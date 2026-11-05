@@ -7,8 +7,8 @@ As much game logic as possible should remain hidden behind the game engine class
 import unittest
 import random
 from sushi_go.game_engine import GameEngine
-from sushi_go.player import Player
-from sushi_go.deck import PuddingCard, ChopsticksCard, TempuraCard, CARD_TYPE_DISTRIBUTION
+from sushi_go.player import Player, PlayerCannotPlayException
+from sushi_go.deck import PuddingCard, ChopsticksCard, TempuraCard, WasabiCard, SquidNigiriCard, CARD_TYPE_DISTRIBUTION
 
 
 class TestGameEngine(unittest.TestCase):
@@ -340,3 +340,185 @@ class TestGameEngine(unittest.TestCase):
             for player in engine.players:
                 result = engine.select_and_play(player.name, 0)
         self.assertEqual(set(result), set('abcde'))
+
+
+class TestGameEngineFlow(unittest.TestCase):
+
+    def make_engine(self, names=('a', 'b')):
+        engine = GameEngine('flow')
+        for name in names:
+            engine.add_player_named(name)
+        return engine
+
+    def test_duplicate_player_name_rejected(self):
+        engine = self.make_engine()
+        with self.assertRaises(Exception):
+            engine.add_player_named('a')
+        self.assertEqual(engine.number_of_players, 2)
+
+    def test_is_player_in(self):
+        engine = self.make_engine()
+        self.assertTrue(engine.is_player_in('a'))
+        self.assertFalse(engine.is_player_in('zzz'))
+
+    def test_start_game_player_count_limits(self):
+        with self.assertRaises(Exception):
+            self.make_engine(('a',)).start_game()
+        with self.assertRaises(Exception):
+            self.make_engine(tuple('abcdef')).start_game()
+        for count in range(2, 6):
+            engine = self.make_engine(tuple('abcde')[:count])
+            engine.start_game()
+            self.assertTrue(engine.in_progress)
+
+    def test_start_game_deals_once(self):
+        engine = self.make_engine()
+        engine.start_game()
+        self.assertEqual(len(engine.deck), 108 - 2 * 10)
+        for player in engine.players:
+            self.assertEqual(len(player.current_hand), 10)
+
+    def test_hand_sizes_per_player_count(self):
+        for count in range(2, 6):
+            engine = self.make_engine(tuple('abcde')[:count])
+            engine.start_game()
+            for player in engine.players:
+                self.assertEqual(len(player.current_hand), 12 - count)
+
+    def test_mid_turn_play_does_not_exchange_or_end_round(self):
+        engine = self.make_engine()
+        engine.start_game()
+        before = list(engine.players[1].current_hand)
+        self.assertIsNone(engine.select_and_play('a', 0))
+        self.assertEqual(engine.players[1].current_hand, before)
+
+    def test_hands_rotate_after_everyone_plays(self):
+        engine = self.make_engine(('a', 'b', 'c'))
+        engine.start_game()
+        a, b, c = engine.players
+        a_hand, b_hand, c_hand = list(a.current_hand), list(b.current_hand), list(c.current_hand)
+        a_card, b_card, c_card = a_hand[0], b_hand[0], c_hand[0]
+        for player in (a, b, c):
+            engine.select_and_play(player.name, 0)
+        self.assertEqual(a.current_hand, b_hand[1:])
+        self.assertEqual(b.current_hand, c_hand[1:])
+        self.assertEqual(c.current_hand, a_hand[1:])
+        self.assertEqual((a.played_cards, b.played_cards, c.played_cards), ([a_card], [b_card], [c_card]))
+        self.assertTrue(all(p.can_play for p in engine.players))
+
+    def test_player_cannot_play_twice_before_others(self):
+        engine = self.make_engine()
+        engine.start_game()
+        engine.select_and_play('a', 0)
+        with self.assertRaises(PlayerCannotPlayException):
+            engine.select_and_play('a', 0)
+
+    def test_unknown_player_or_bad_index(self):
+        engine = self.make_engine()
+        engine.start_game()
+        with self.assertRaises(IndexError):
+            engine.select_and_play('nobody', 0)
+        with self.assertRaises(IndexError):
+            engine.select_and_play('a', 99)
+
+    def play_round(self, engine):
+        result = None
+        round_number = engine.current_round
+        while engine.current_round == round_number:
+            for player in engine.players:
+                result = engine.select_and_play(player.name, 0)
+        return result
+
+    def test_round_end_scores_and_deals_next_round(self):
+        engine = self.make_engine()
+        engine.start_game()
+        self.play_round(engine)
+        self.assertEqual(engine.current_round, 1)
+        self.assertEqual([len(v) for v in engine.scores.values()], [1, 1])
+        for player in engine.players:
+            self.assertEqual(player.played_cards, [])
+            self.assertEqual(len(player.current_hand), 10)
+
+    def test_full_game_records_three_rounds_and_totals(self):
+        engine = self.make_engine()
+        engine.start_game()
+        totals = None
+        for _ in range(engine.max_rounds):
+            totals = self.play_round(engine)
+        self.assertEqual(engine.current_round, 3)
+        self.assertEqual({n: len(v) for n, v in engine.scores.items()}, {'a': 3, 'b': 3})
+        self.assertEqual(set(totals), {'a', 'b'})
+        pudding_diff = {n: totals[n] - sum(engine.scores[n]) for n in totals}
+        self.assertTrue(all(v in (0, 6) for v in pudding_diff.values()))
+
+    def test_pudding_not_double_counted(self):
+        engine = self.make_engine()
+        engine.start_game()
+        engine.players[0].played_cards = [PuddingCard()]
+        engine.end_current_round()
+        self.assertEqual(engine.players[0].pudding_count, 1)
+        engine.end_current_round()  # new round started with an empty table
+        self.assertEqual(engine.players[0].pudding_count, 1)
+
+    def test_pudding_penalty_applied_with_three_players(self):
+        engine = self.make_engine(('a', 'b', 'c'))
+        engine.start_game()
+        engine.players[0].pudding_count = 3
+        engine.players[1].pudding_count = 1
+        engine.players[2].pudding_count = 0
+        engine.current_round = engine.max_rounds - 1
+        for player in engine.players:
+            player.played_cards = []
+        totals = engine.end_current_round()
+        self.assertEqual(totals, {'a': 6, 'b': 0, 'c': -6})
+
+    def test_chopsticks_keeps_hand_sizes_in_sync_and_round_finishes(self):
+        engine = self.make_engine()
+        engine.start_game()
+        a, b = engine.players
+        a.played_cards = [ChopsticksCard()]
+        engine.select_and_play_two('a', 0, 1)
+        engine.select_and_play('b', 0)
+        self.assertEqual(len(a.current_hand), len(b.current_hand))
+        self.assertEqual(len(a.current_hand), 9)  # played two, took the chopsticks back
+        # finish the round: chopsticks travels around as a normal card
+        while engine.current_round == 0:
+            for player in engine.players:
+                engine.select_and_play(player.name, 0)
+        self.assertEqual(engine.current_round, 1)
+
+    def test_chopsticks_with_two_cards_left(self):
+        engine = self.make_engine()
+        engine.start_game()
+        a, b = engine.players
+        a.current_hand = a.current_hand[:2]
+        b.current_hand = b.current_hand[:2]
+        a.played_cards = [ChopsticksCard()]
+        engine.select_and_play_two('a', 0, 1)
+        engine.select_and_play('b', 0)
+        self.assertEqual((len(a.current_hand), len(b.current_hand)), (1, 1))
+        engine.select_and_play('a', 0)
+        engine.select_and_play('b', 0)
+        self.assertEqual(engine.current_round, 1)
+
+    def test_select_and_play_two_same_index_rejected(self):
+        engine = self.make_engine()
+        engine.start_game()
+        engine.players[0].played_cards = [ChopsticksCard()]
+        with self.assertRaises(Exception):
+            engine.select_and_play_two('a', 2, 2)
+        self.assertEqual(len(engine.players[0].current_hand), 10)
+
+    def test_wasabi_boosts_nigiri_through_engine(self):
+        engine = self.make_engine()
+        engine.start_game()
+        a, b = engine.players
+        wasabi, squid = WasabiCard(), SquidNigiriCard()
+        a.current_hand[0:2] = [wasabi, squid]
+        engine.select_and_play('a', 0)
+        engine.select_and_play('b', 0)
+        # hands swapped; give a the squid back to play it
+        a.current_hand.insert(0, squid)
+        engine.select_and_play('a', 0)
+        self.assertIs(squid.wasabi, wasabi)
+        self.assertEqual(engine.scorer.score_for_independent_hand(a.played_cards), 9)

@@ -24,4 +24,4 @@ An implementation of the card game SushiGo! in python.
 6. Each player can idependently play their cards (PLAY_CARD). The body is a card index e.g. `3`, or two comma separated indexes e.g. `3,5` to play two cards using a chopsticks card already on the table
 
 ### Run tests
-`python3 -m unittest discover tests`
+`python3 -m unittest discover -s tests -t .` (run from the repo root)

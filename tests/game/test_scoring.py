@@ -2,8 +2,9 @@
 card scoring methods and the hand scoring mechanism.
 """
 import unittest
-from sushi_go.scorer import Scorer
-from sushi_go.deck import TempuraCard, DumplingCard, SashimiCard, EggNigiriCard, SalmonNigiriCard, SquidNigiriCard, WasabiCard, NigiriCard, OneRollMakiCard, TwoRollMakiCard, ThreeRollMakiCard
+from sushi_go.scorer import Scorer, get_largest_and_second_largest
+from sushi_go.player import Player
+from sushi_go.deck import TempuraCard, DumplingCard, SashimiCard, EggNigiriCard, SalmonNigiriCard, SquidNigiriCard, WasabiCard, NigiriCard, OneRollMakiCard, TwoRollMakiCard, ThreeRollMakiCard, PuddingCard, ChopsticksCard
 
 
 class TestScoring(unittest.TestCase):
@@ -160,3 +161,71 @@ class TestPuddingScoring(unittest.TestCase):
     def test_all_tied_scores_nothing(self):
         self.assertEqual(self.scorer.score_for_puddings([2, 2, 2]), [0, 0, 0])
         self.assertEqual(self.scorer.score_for_puddings([0, 0]), [0, 0])
+
+
+class TestMakiAndRoundScoring(unittest.TestCase):
+
+    def setUp(self):
+        self.scorer = Scorer()
+
+    def make_player(self, cards):
+        player = Player('p')
+        player.played_cards = cards
+        return player
+
+    def test_maki_ties_round_down(self):
+        # 6 split 4 ways is 1, 3 split 2 ways is 1
+        self.assertEqual(self.scorer.maki_score_for_roll_count([4, 4, 4, 4]), [1, 1, 1, 1])
+        self.assertEqual(self.scorer.maki_score_for_roll_count([5, 2, 2]), [6, 1, 1])
+        self.assertEqual(self.scorer.maki_score_for_roll_count([3, 3, 3]), [2, 2, 2])
+
+    def test_maki_scores_are_whole_numbers(self):
+        for counts in ([5, 2, 2], [1, 1, 1, 1, 1], [3, 3, 1, 1, 1]):
+            for score in self.scorer.maki_score_for_roll_count(counts):
+                self.assertEqual(score, int(score))
+
+    def test_maki_single_player_with_maki(self):
+        self.assertEqual(self.scorer.maki_score_for_roll_count([2, 0]), [6, 0])
+
+    def test_maki_second_place_ignored_when_zero(self):
+        self.assertEqual(self.scorer.maki_score_for_roll_count([0, 0, 3]), [0, 0, 6])
+
+    def test_largest_and_second_largest(self):
+        self.assertEqual(get_largest_and_second_largest([5, 5, 1, 2]), (5, 2))
+        self.assertEqual(get_largest_and_second_largest([0, 0]), (0, 0))
+        self.assertEqual(get_largest_and_second_largest([7]), (7, 0))
+
+    def test_calculate_maki_scores_from_players(self):
+        one = self.make_player([ThreeRollMakiCard(), OneRollMakiCard()])
+        two = self.make_player([TwoRollMakiCard()])
+        three = self.make_player([TempuraCard()])
+        self.assertEqual(self.scorer.calculate_maki_scores([one, two, three]), [6, 3, 0])
+
+    def test_score_for_round_combines_independent_and_maki(self):
+        sc = SquidNigiriCard()
+        sc.wasabi = WasabiCard()
+        one = self.make_player([TempuraCard(), TempuraCard(), sc, ThreeRollMakiCard()])
+        two = self.make_player([SashimiCard(), SashimiCard(), SashimiCard(), OneRollMakiCard()])
+        # one: 5 tempura + 9 wasabi squid + 6 maki; two: 10 sashimi + 3 maki
+        self.assertEqual(self.scorer.score_for_round([one, two]), [20, 13])
+
+    def test_score_for_round_empty_tables(self):
+        self.assertEqual(self.scorer.score_for_round([self.make_player([]), self.make_player([])]), [0, 0])
+
+    def test_pudding_cards_do_not_score_during_round(self):
+        one = self.make_player([PuddingCard(), PuddingCard()])
+        two = self.make_player([])
+        self.assertEqual(self.scorer.score_for_round([one, two]), [0, 0])
+
+    def test_chopsticks_score_nothing(self):
+        self.assertEqual(self.scorer.score_for_independent_hand([ChopsticksCard()]), 0)
+
+    def test_nigiri_values_and_wasabi(self):
+        for card_class, value in ((EggNigiriCard, 1), (SalmonNigiriCard, 2), (SquidNigiriCard, 3)):
+            plain, boosted = card_class(), card_class()
+            boosted.wasabi = WasabiCard()
+            self.assertEqual(self.scorer.score_for_nigiri([plain]), value)
+            self.assertEqual(self.scorer.score_for_nigiri([boosted]), value * 3)
+
+    def test_unused_wasabi_scores_nothing(self):
+        self.assertEqual(self.scorer.score_for_independent_hand([WasabiCard()]), 0)
