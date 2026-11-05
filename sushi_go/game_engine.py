@@ -1,5 +1,5 @@
 from sushi_go.scorer import Scorer
-from sushi_go.deck import Deck
+from sushi_go.deck import Deck, PuddingCard
 from sushi_go.player import Player
 
 class GameEngine:
@@ -69,10 +69,23 @@ class GameEngine:
             cards = self.deck.draw_random_cards(self.cards_per_player)
             player.current_hand = cards
 
+    def _player_named(self, player_name):
+        return [player for player in self.players if player.name == player_name][0]
+
     def select_and_play(self, player_name, index):
-        player = [player for player in self.players if player.name == player_name][0]
+        player = self._player_named(player_name)
         card = player.current_hand[index]
         player.play_card(card)
+        return self.progress_game()
+
+    def select_and_play_two(self, player_name, first_index, second_index):
+        """Play two cards in one turn using a chopsticks card."""
+        player = self._player_named(player_name)
+        if first_index == second_index:
+            raise Exception("Cannot play the same card twice.")
+        first = player.current_hand[first_index]
+        second = player.current_hand[second_index]
+        player.play_two_cards(first, second)
         return self.progress_game()
 
     def progress_game(self):
@@ -128,6 +141,7 @@ class GameEngine:
     def end_current_round(self):
         self.current_round += 1
         self.record_scores()
+        self.collect_puddings()
         if self.is_game_complete():
             return self.run_game_complete()
         else:
@@ -138,15 +152,23 @@ class GameEngine:
         for idx, score in enumerate(scores):
             self.scores.setdefault(self.players[idx].name, []).append(score)
 
+    def collect_puddings(self):
+        """Puddings are kept between rounds and only scored at game end."""
+        for player in self.players:
+            player.pudding_count += sum(
+                1 for card in player.played_cards if isinstance(card, PuddingCard))
+
     def is_game_complete(self):
         if self.current_round == self.max_rounds:
             return True
         return False
 
     def run_game_complete(self):
+        pudding_scores = self.scorer.score_for_puddings(
+            [player.pudding_count for player in self.players])
         end_game_total_scores = {}
-        for player in self.players:
-            end_game_total_scores[player.name] = sum(self.scores[player.name])
+        for player, pudding_score in zip(self.players, pudding_scores):
+            end_game_total_scores[player.name] = sum(self.scores[player.name]) + pudding_score
         return end_game_total_scores
 
     def __repr__(self):

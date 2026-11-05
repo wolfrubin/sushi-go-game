@@ -139,3 +139,24 @@ class TestScoring(unittest.TestCase):
         with Maki type cards.
         """
         pass
+
+
+class TestPuddingScoring(unittest.TestCase):
+
+    def setUp(self):
+        self.scorer = Scorer()
+
+    def test_most_and_least(self):
+        self.assertEqual(self.scorer.score_for_puddings([3, 1, 2]), [6, -6, 0])
+
+    def test_ties_split_and_round_down(self):
+        self.assertEqual(self.scorer.score_for_puddings([2, 2, 2, 0]), [2, 2, 2, -6])
+        self.assertEqual(self.scorer.score_for_puddings([3, 0, 0, 1]), [6, -3, -3, 0])
+        self.assertEqual(self.scorer.score_for_puddings([1, 1, 0, 0, 0]), [3, 3, -2, -2, -2])
+
+    def test_no_penalty_in_two_player_game(self):
+        self.assertEqual(self.scorer.score_for_puddings([3, 1]), [6, 0])
+
+    def test_all_tied_scores_nothing(self):
+        self.assertEqual(self.scorer.score_for_puddings([2, 2, 2]), [0, 0, 0])
+        self.assertEqual(self.scorer.score_for_puddings([0, 0]), [0, 0])

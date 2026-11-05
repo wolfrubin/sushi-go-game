@@ -46,7 +46,7 @@ class Card(object):
         self.card_type = self.__class__.__name__
 
 class TempuraCard(Card):
-	pass
+    pass
 
 class SashimiCard(Card):
     pass
@@ -69,6 +69,12 @@ class EggNigiriCard(NigiriCard):
 class WasabiCard(Card):
     pass
 
+class ChopsticksCard(Card):
+    pass
+
+class PuddingCard(Card):
+    pass
+
 
 class MakiCard(Card):
     
@@ -87,15 +93,18 @@ class TwoRollMakiCard(MakiCard):
 class ThreeRollMakiCard(MakiCard):
     number_of_rolls = 3
 
+# Standard 108 card Sushi Go! deck
 CARD_TYPE_DISTRIBUTION = {
     TempuraCard: 14,
     SashimiCard: 14,
     DumplingCard: 14,
     SquidNigiriCard: 5,
-    SalmonNigiriCard: 5,
+    SalmonNigiriCard: 10,
     EggNigiriCard: 5,
-    WasabiCard: 5,
-    OneRollMakiCard: 4,
-    TwoRollMakiCard: 4,
-    ThreeRollMakiCard: 4,
+    WasabiCard: 6,
+    ChopsticksCard: 4,
+    PuddingCard: 10,
+    OneRollMakiCard: 6,
+    TwoRollMakiCard: 12,
+    ThreeRollMakiCard: 8,
 }

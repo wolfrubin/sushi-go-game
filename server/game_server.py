@@ -21,8 +21,9 @@ Player - The name of the player performing the action
     E.g. christian
 
 BODY
-Body - Can be empty. Currently used to specifiy which card is played
-    E.g. 0, 10
+Body - Can be empty. Currently used to specifiy which card is played.
+    Two comma separated indexes play two cards using chopsticks
+    E.g. 0, 10, 3,5
 
 
 A SuGo response looks like the following

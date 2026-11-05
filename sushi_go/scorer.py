@@ -115,3 +115,22 @@ class Scorer:
             score += card_score
 
         return score
+
+    def score_for_puddings(self, pudding_counts):
+        """
+        End of game scoring. Most puddings share +6, fewest puddings share -6
+        (rounded down towards zero). The penalty is not applied in 2 player
+        games, and nothing is awarded if all players are tied.
+        """
+        scores = [0] * len(pudding_counts)
+        most, fewest = max(pudding_counts), min(pudding_counts)
+        if most == fewest:
+            return scores
+        top = [i for i, c in enumerate(pudding_counts) if c == most]
+        for i in top:
+            scores[i] = 6 // len(top)
+        if len(pudding_counts) > 2:
+            bottom = [i for i, c in enumerate(pudding_counts) if c == fewest]
+            for i in bottom:
+                scores[i] = -(6 // len(bottom))
+        return scores
