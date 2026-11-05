@@ -140,7 +140,11 @@ class Gateway:
     async def handle_message(self, conn, raw):
         msg_id = None
         try:
-            self._check_rate(conn)
+            try:
+                self._check_rate(conn)
+            except BadMessage as error:
+                error.msg_id = self._peek_id(raw)  # so the client can match the error to its request
+                raise
             msg = self._parse(raw)
             msg_id = msg['id']
             reply, game = self._process(conn, msg)
@@ -161,6 +165,18 @@ class Gateway:
         if len(recent) >= RATE_LIMIT_MESSAGES:
             raise BadMessage('too many messages, slow down')
         recent.append(now)
+
+    @staticmethod
+    def _peek_id(raw):
+        """Best effort read of the request id from a message we are not going to process."""
+        try:
+            msg_id = json.loads(raw).get('id')
+        except (ValueError, TypeError, AttributeError):
+            return None
+        if isinstance(msg_id, bool) or not (
+                isinstance(msg_id, int) or (isinstance(msg_id, str) and len(msg_id) <= MAX_ID_LENGTH)):
+            return None
+        return msg_id
 
     @staticmethod
     def _parse(raw) -> dict:
@@ -279,11 +295,14 @@ async def start_websocket_server(gateway: Gateway, host: str = HOST, port: int =
     If origins is given, browsers must come from one of them. Clients that
     send no Origin header (scripts, CLIs) are still allowed."""
     import websockets
+    from websockets.exceptions import ConnectionClosed
 
     async def handler(websocket):
         try:
             async for raw in websocket:
                 await gateway.handle_message(websocket, raw)
+        except ConnectionClosed:
+            pass  # a tab closing or a network drop is normal, not an error
         finally:
             gateway.disconnect(websocket)
 

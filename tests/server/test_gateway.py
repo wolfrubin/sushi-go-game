@@ -133,6 +133,17 @@ class TestMessageValidation(GatewayTestCase):
         self.now += gw.RATE_LIMIT_WINDOW_SECONDS + 1
         self.assertTrue((await self.send(conn, action='LIST_GAMES'))['ok'])
 
+    async def test_rate_limit_error_echoes_the_request_id(self):
+        conn = FakeConn()
+        for _ in range(gw.RATE_LIMIT_MESSAGES):
+            await self.send(conn, action='LIST_GAMES')
+        await self.gateway.handle_message(conn, json.dumps({'id': 77, 'action': 'LIST_GAMES'}))
+        self.assertEqual((conn.last_reply['id'], conn.last_reply['ok']), (77, False))
+        # unreadable messages are still refused, just without an id
+        for raw in ('{nope', '[1]', b'\x00', json.dumps({'id': [1]})):
+            await self.gateway.handle_message(conn, raw)
+            self.assertEqual((conn.last_reply['id'], conn.last_reply['ok']), (None, False))
+
 
 class TestLobbyAndTokens(GatewayTestCase):
 
