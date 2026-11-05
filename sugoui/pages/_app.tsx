@@ -2,6 +2,7 @@ import React from 'react';
 import type { AppProps } from 'next/app';
 
 import 'bootswatch/dist/darkly/bootstrap.min.css';
+import '../styles/game.css';
 
 function SushiGoApp({ Component, pageProps }: AppProps) {
   return <Component {...pageProps} />;

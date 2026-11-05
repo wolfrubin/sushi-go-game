@@ -1,0 +1,85 @@
+.sg-hand,
+.sg-table {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sg-card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  width: 6rem;
+  min-height: 6.5rem;
+  padding: 0.4rem;
+  border: 2px solid var(--bs-border-color);
+  border-radius: 0.6rem;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  text-align: center;
+  line-height: 1.15;
+}
+
+button.sg-card {
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.1s ease;
+}
+
+button.sg-card:hover:not(:disabled) {
+  transform: translateY(-3px);
+  border-color: var(--bs-primary);
+}
+
+button.sg-card:focus-visible {
+  outline: 3px solid var(--bs-warning);
+  outline-offset: 2px;
+}
+
+button.sg-card:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.sg-card-selected {
+  border-color: var(--bs-warning);
+  transform: translateY(-6px);
+  box-shadow: 0 0 0 2px var(--bs-warning);
+}
+
+.sg-card-small {
+  width: 4.6rem;
+  min-height: 4.6rem;
+  font-size: 0.75rem;
+}
+
+.sg-card-wasabi {
+  border-color: var(--bs-success);
+}
+
+.sg-card-emoji {
+  font-size: 1.8rem;
+}
+
+.sg-card-small .sg-card-emoji {
+  font-size: 1.3rem;
+}
+
+.sg-card-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.sg-card-tag {
+  font-size: 0.65rem;
+  color: var(--bs-success);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.sg-card,
+  .sg-card-selected {
+    transition: none;
+    transform: none;
+  }
+}

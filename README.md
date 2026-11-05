@@ -9,15 +9,19 @@ An implementation of the card game SushiGo! in python.
 1. Fix the websocket implementation to work with the game engine
 
 #### React UI (/sugoui)
-1. Splash page to request users name
-2. Build a working UI for joining, browsing and initialising a game
+1. Mobile layout polish and a visual design pass
 
-### SuGoUi module isn't ready for use yet. Currently a work in progress
+### SuGoUi (browser UI)
 Next.js 16 / React 19 / Bootstrap 5 (Bootswatch Darkly). From `sugoui/`:
 - `npm install`
 - `npm run dev` starts a dev server
 - `npm run build` exports static files to `sugoui/out` (no Node server needed to host them).
   Set `SUGO_BASE_PATH=/sushi` to build for serving from a sub path.
+- `npm test` runs the UI tests (client, storage helpers and component rendering).
+
+During `npm run dev` the UI connects to the game server on `ws://localhost:4137`
+(`python -m server.gateway`). In production it connects to `wss://<same host><base path>/ws`.
+Set `NEXT_PUBLIC_SUGO_WS_URL` to override.
 
 ### How to run
 1. From the main directory run `python -m server.game_server`. This starts the game server on port 4136
