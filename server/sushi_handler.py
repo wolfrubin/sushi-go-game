@@ -35,11 +35,13 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from sushi_go.game_engine import GameEngine
+from sushi_go.player import PlayerCannotPlayException
 from server.sugo_request import SuGoRequest
 from server.exceptions import (
     GameAlreadyExistsError,
     GameDoesNotExistError,
     GameInProgressError,
+    InvalidRequestError,
     PlayerAlreadyJoinedError
 )
 
@@ -102,17 +104,24 @@ class StartGameHandler:
 
     def handle(self, req: SuGoRequest):
         engine = GAME_DICT[req.game_name]
+        if engine.in_progress:
+            raise GameInProgressError(req.game_name)
         try:
             engine.start_game()
-        except Exception:
-            raise GameInProgressError(req.game_name)
-        engine.start_round()
+        except Exception as e:
+            raise InvalidRequestError(str(e))
         return 'game started'
 
 class PlayCardHandler:
 
     def handle(self, req: SuGoRequest):
         engine = GAME_DICT[req.game_name]
-        index = int(req.body)
-        vals = engine.select_and_play(req.player, index)
+        try:
+            index = int(req.body)
+        except ValueError:
+            raise InvalidRequestError(f"card index must be an integer, got \"{req.body}\"")
+        try:
+            engine.select_and_play(req.player, index)
+        except (IndexError, PlayerCannotPlayException) as e:
+            raise InvalidRequestError(f"cannot play card {index}")
         return 'card played'

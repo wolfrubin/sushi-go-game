@@ -51,7 +51,7 @@ import sys
 
 from server import sushi_handler
 from server.sugo_request import SuGoRequest, SuGoResponse
-from server.exceptions import SuGoError
+from server.exceptions import SuGoError, InvalidRequestError
 
 
 def make_handler_class_name(action_name: str):
@@ -88,10 +88,11 @@ async def client_connected(reader: asyncio.StreamReader, writer: asyncio.StreamW
     req = SuGoRequest(*sugo_request_vals)
     if req.protocol == 'SuGo 1.0':
         handler_class_name = make_handler_class_name(req.action_type)
-        handler_class = getattr(sushi_handler, handler_class_name)
-        handler = handler_class()
+        handler_class = getattr(sushi_handler, handler_class_name, None)
         try:
-            response = handler.handle(req)
+            if handler_class is None:
+                raise InvalidRequestError(f"unknown action \"{req.action_type}\"")
+            response = handler_class().handle(req)
         except SuGoError as e:
             su_go_response = SuGoResponse(*[
                 req.protocol,
@@ -112,7 +113,7 @@ async def client_connected(reader: asyncio.StreamReader, writer: asyncio.StreamW
             ])
         writer.write(response_to_bytes(su_go_response))
         await writer.drain()
-        writer.close()
+    writer.close()
 
 
 print('Starting sushi go server')

@@ -106,8 +106,11 @@ class TestGameEngine(unittest.TestCase):
         self.game_engine.select_and_play(self.player_one.name, 0)
         self.assertFalse(self.game_engine.are_players_ready_next_card())
 
+        # Once everyone has played, select_and_play exchanges the hands and
+        # resets every player's can_play flag.
         self.game_engine.select_and_play(self.player_two.name, 1)
-        self.assertTrue(self.game_engine.are_players_ready_next_card())
+        self.assertTrue(self.player_one.can_play)
+        self.assertTrue(self.player_two.can_play)
 
     def test_exchange_hands(self):
         """
@@ -206,12 +209,11 @@ class TestGameEngine(unittest.TestCase):
 
         self.assertFalse(hands_exchanged)
 
+        # The second play triggers the exchange automatically and resets
+        # can_play for everyone.
         self.game_engine.select_and_play(self.player_two.name, 0)
-        self.assertFalse(self.player_two.can_play)
-        hands_exchanged = self.game_engine.try_exchange_hands()
-
-        self.assertTrue(hands_exchanged)
-
+        self.assertTrue(self.player_one.can_play)
+        self.assertTrue(self.player_two.can_play)
         self.assertFalse(self.game_engine.are_players_ready_next_card())
 
     def test_is_game_complete(self):
@@ -247,14 +249,15 @@ class TestGameEngine(unittest.TestCase):
         self.game_engine.record_scores()
 
         for player in self.game_engine.players:
-            self.assertTrue(player in self.game_engine.scores.keys())
-            self.assertIsNotNone(self.game_engine.scores[player])
+            self.assertTrue(player.name in self.game_engine.scores.keys())
+            self.assertIsNotNone(self.game_engine.scores[player.name])
 
     def test_end_current_round(self):
         """
         To end the current round we need to increment the
         current round number and then record the scores.
         """
+        self.game_engine.start_game()
         round_before = self.game_engine.current_round
         self.game_engine.end_current_round()
         self.assertEqual(self.game_engine.current_round, round_before+1)
@@ -274,3 +277,13 @@ class TestGameEngine(unittest.TestCase):
 
         self.game_engine.calc_card_per_player(5)
         self.assertEqual(self.game_engine.cards_per_player, 7)
+
+
+    def test_game_complete_totals_scores_by_player_name(self):
+        """
+        Finishing the final round returns each player's total score.
+        """
+        self.game_engine.start_game()
+        self.game_engine.current_round = self.game_engine.max_rounds - 1
+        result = self.game_engine.end_current_round()
+        self.assertEqual(set(result.keys()), {'Test one', 'Test two'})

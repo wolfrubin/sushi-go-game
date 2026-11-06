@@ -136,10 +136,7 @@ class GameEngine:
     def record_scores(self):
         scores = self.scorer.score_for_round(self.players)
         for idx, score in enumerate(scores):
-            try:
-               self.scores[self.players[idx].name].append(score) 
-            except Exception as e:
-                self.scores[self.players[idx].name] = [score]
+            self.scores.setdefault(self.players[idx].name, []).append(score)
 
     def is_game_complete(self):
         if self.current_round == self.max_rounds:
@@ -149,7 +146,7 @@ class GameEngine:
     def run_game_complete(self):
         end_game_total_scores = {}
         for player in self.players:
-            end_game_total_scores[player.name] = sum(self.scores[player])
+            end_game_total_scores[player.name] = sum(self.scores[player.name])
         return end_game_total_scores
 
     def __repr__(self):
