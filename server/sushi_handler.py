@@ -116,12 +116,21 @@ class PlayCardHandler:
 
     def handle(self, req: SuGoRequest):
         engine = GAME_DICT[req.game_name]
+        # Body is a single card index, or two comma separated indexes when
+        # playing two cards with chopsticks e.g. "3" or "3,5"
         try:
-            index = int(req.body)
+            indexes = [int(part) for part in req.body.split(',')]
         except ValueError:
             raise InvalidRequestError(f"card index must be an integer, got \"{req.body}\"")
+        if len(indexes) not in (1, 2):
+            raise InvalidRequestError("play one card index, or two when using chopsticks")
         try:
-            engine.select_and_play(req.player, index)
+            if len(indexes) == 1:
+                engine.select_and_play(req.player, indexes[0])
+            else:
+                engine.select_and_play_two(req.player, *indexes)
         except (IndexError, PlayerCannotPlayException) as e:
-            raise InvalidRequestError(f"cannot play card {index}")
+            raise InvalidRequestError(f"cannot play card(s) {req.body}")
+        except Exception as e:
+            raise InvalidRequestError(str(e))
         return 'card played'

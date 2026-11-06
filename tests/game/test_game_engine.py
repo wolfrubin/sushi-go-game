@@ -8,6 +8,7 @@ import unittest
 import random
 from sushi_go.game_engine import GameEngine
 from sushi_go.player import Player
+from sushi_go.deck import PuddingCard, ChopsticksCard, TempuraCard, CARD_TYPE_DISTRIBUTION
 
 
 class TestGameEngine(unittest.TestCase):
@@ -287,3 +288,55 @@ class TestGameEngine(unittest.TestCase):
         self.game_engine.current_round = self.game_engine.max_rounds - 1
         result = self.game_engine.end_current_round()
         self.assertEqual(set(result.keys()), {'Test one', 'Test two'})
+
+
+    def test_deck_is_standard_108_cards(self):
+        self.assertEqual(sum(CARD_TYPE_DISTRIBUTION.values()), 108)
+        self.assertEqual(len(self.game_engine.deck), 108)
+
+    def test_puddings_carry_over_between_rounds_and_score_at_end(self):
+        self.game_engine.start_game()
+        self.player_one.played_cards = [PuddingCard(), PuddingCard()]
+        self.player_two.played_cards = [PuddingCard()]
+        self.game_engine.end_current_round()
+        self.assertEqual(self.player_one.pudding_count, 2)
+        self.assertEqual(self.player_two.pudding_count, 1)
+        # new round clears the table but keeps the pudding tally
+        self.assertEqual(self.player_one.played_cards, [])
+
+        self.game_engine.current_round = self.game_engine.max_rounds - 1
+        self.player_one.played_cards = []
+        self.player_two.played_cards = []
+        totals = self.game_engine.end_current_round()
+        self.assertEqual(totals['Test one'] - sum(self.game_engine.scores['Test one']), 6)
+        self.assertEqual(totals['Test two'] - sum(self.game_engine.scores['Test two']), 0)
+
+    def test_select_and_play_two_with_chopsticks(self):
+        self.game_engine.start_game()
+        chopsticks = ChopsticksCard()
+        self.player_one.played_cards = [chopsticks]
+        hand = self.player_one.current_hand
+        first, second = hand[0], hand[1]
+
+        self.game_engine.select_and_play_two(self.player_one.name, 0, 1)
+
+        self.assertEqual(self.player_one.played_cards[-2:], [first, second])
+        self.assertNotIn(chopsticks, self.player_one.played_cards)
+        self.assertIn(chopsticks, self.player_one.current_hand)
+        self.assertEqual(len(self.player_one.current_hand), 9)
+
+    def test_select_and_play_two_requires_chopsticks(self):
+        self.game_engine.start_game()
+        with self.assertRaises(Exception):
+            self.game_engine.select_and_play_two(self.player_one.name, 0, 1)
+
+    def test_full_game_five_players_does_not_run_out_of_cards(self):
+        engine = GameEngine('big')
+        for name in 'abcde':
+            engine.add_player_named(name)
+        engine.start_game()
+        result = None
+        while result is None:
+            for player in engine.players:
+                result = engine.select_and_play(player.name, 0)
+        self.assertEqual(set(result), set('abcde'))
