@@ -7,4 +7,5 @@ module.exports = {
   output: 'export',
   basePath: process.env.SUGO_BASE_PATH || '',
   images: { unoptimized: true },
+  env: { NEXT_PUBLIC_BASE_PATH: process.env.SUGO_BASE_PATH || '' },
 };
