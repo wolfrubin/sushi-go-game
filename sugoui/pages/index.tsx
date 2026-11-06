@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Col, Row } from 'react-bootstrap';
 import Container from 'react-bootstrap/Container'
 import { GameEntryList } from '../components/dashboard/gameEntryList';

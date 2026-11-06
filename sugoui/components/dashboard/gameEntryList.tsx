@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { CardDeck, Col, Row } from 'react-bootstrap';
+import { Col, Row } from 'react-bootstrap';
 import { SushiGame } from '../../interfaces';
 import { CreateGameDialogue } from './createGameDialogue';
 import { GameTitleCard } from './gameTitleCard';
@@ -26,11 +26,11 @@ export function GameEntryList(props: GameEntryListProps) {
     </Row>
     <Row>
       <Col>
-        <CardDeck>
+        <div className="d-flex flex-wrap gap-3">
           {props.games?.map((game: SushiGame) => {
             return game.players.length !== 0 ? <GameTitleCard game={game} key={game.name} /> : null
           })}
-        </CardDeck>
+        </div>
       </Col>
     </Row>
     <Row>
