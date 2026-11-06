@@ -11,7 +11,7 @@ from server.exceptions import (
     PlayerAlreadyJoinedError,
     SuGoError,
 )
-from sushi_go.deck import ChopsticksCard
+from sushi_go.deck import ChopsticksCard, TempuraCard, SashimiCard
 
 
 def req(action, player='alice', game='g', body=''):
@@ -160,6 +160,8 @@ class TestPlayCard(HandlerTestCase):
         engine = self.ready_game()
         alice = engine.players[0]
         alice.played_cards = [ChopsticksCard()]
+        # fixed cards so a random wasabi + nigiri draw can't merge on the table
+        alice.current_hand[0:2] = [TempuraCard(), SashimiCard()]
         self.assertEqual(self.play('alice', '0,1'), 'card played')
         self.assertEqual(len(alice.played_cards), 2)
         self.assertEqual(len(alice.current_hand), 9)

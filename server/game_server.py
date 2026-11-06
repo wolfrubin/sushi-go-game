@@ -47,12 +47,23 @@ Body
 
 """
 import asyncio
+import logging
 import signal
-import sys
+from typing import Optional
 
 from server import sushi_handler
 from server.sugo_request import SuGoRequest, SuGoResponse
 from server.exceptions import SuGoError, InvalidRequestError
+
+
+logger = logging.getLogger(__name__)
+
+PROTOCOL = 'SuGo 1.0'
+HOST = '127.0.0.1'
+PORT = 4136
+
+FAILURE = '0'
+SUCCESS = '1'
 
 
 def make_handler_class_name(action_name: str):
@@ -78,67 +89,78 @@ def response_to_bytes(response: SuGoResponse):
     return byte_list
 
 
+def build_response(req: SuGoRequest, status: str, body: str) -> SuGoResponse:
+    return SuGoResponse(req.protocol, req.action_type, req.game_name, req.player, status, body)
+
+
+def dispatch(req: SuGoRequest) -> SuGoResponse:
+    """
+    Run a request through the matching handler and build the response.
+    Expected failures (SuGoError) become FAILURE responses. This does no I/O
+    so it can be tested without a socket.
+    """
+    handler_class = getattr(sushi_handler, make_handler_class_name(req.action_type), None)
+    try:
+        if handler_class is None:
+            raise InvalidRequestError(f"unknown action \"{req.action_type}\"")
+        return build_response(req, SUCCESS, handler_class().handle(req))
+    except SuGoError as e:
+        return build_response(req, FAILURE, e.message)
+    except Exception:
+        logger.exception("Unhandled error handling %s", req.action_type)
+        return build_response(req, FAILURE, "Internal server error")
+
+
+async def read_request(reader: asyncio.StreamReader) -> Optional[SuGoRequest]:
+    """
+    Read one request from the client. Returns None if the client hangs up
+    part way through or sends bytes that are not valid utf-8.
+    """
+    values = []
+    try:
+        for _ in SuGoRequest._fields:
+            field_bytes = await reader.readuntil(b'\r\n')
+            values.append(field_bytes[:-2].decode('utf-8'))
+    except (asyncio.IncompleteReadError, asyncio.LimitOverrunError, UnicodeDecodeError):
+        return None
+    return SuGoRequest(*values)
+
+
 async def client_connected(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-    # Client has connected to the SuGo server
-    # Retrieve the rows to populate the request object
-    sugo_request_vals = []
-    for field in SuGoRequest._fields:
-        field_bytes = await reader.readuntil(b'\r\n')
-        field_string = field_bytes[:-2].decode('utf-8')
-        sugo_request_vals.append(field_string)
-    req = SuGoRequest(*sugo_request_vals)
-    if req.protocol == 'SuGo 1.0':
-        handler_class_name = make_handler_class_name(req.action_type)
-        handler_class = getattr(sushi_handler, handler_class_name, None)
-        try:
-            if handler_class is None:
-                raise InvalidRequestError(f"unknown action \"{req.action_type}\"")
-            response = handler_class().handle(req)
-        except SuGoError as e:
-            su_go_response = SuGoResponse(*[
-                req.protocol,
-                req.action_type,
-                req.game_name,
-                req.player,
-                '0',
-                e.message
-            ])
-        else:
-            su_go_response = SuGoResponse(*[
-                req.protocol,
-                req.action_type,
-                req.game_name,
-                req.player,
-                '1',
-                response
-            ])
-        writer.write(response_to_bytes(su_go_response))
-        await writer.drain()
-    writer.close()
+    # Client has connected to the SuGo server. Requests for any other
+    # protocol are dropped without a response.
+    try:
+        req = await read_request(reader)
+        if req is not None and req.protocol == PROTOCOL:
+            writer.write(response_to_bytes(dispatch(req)))
+            await writer.drain()
+    finally:
+        writer.close()
 
 
-print('Starting sushi go server')
-
-event_loop: asyncio.BaseEventLoop = asyncio.get_event_loop()
-
-factory = asyncio.start_server(client_connected, host='127.0.0.1', port=4136)
-server = event_loop.run_until_complete(factory)
+async def start_server(host: str = HOST, port: int = PORT) -> asyncio.AbstractServer:
+    """Start listening. Pass port=0 to let the OS pick a free port."""
+    return await asyncio.start_server(client_connected, host=host, port=port)
 
 
-def shutdown():
+async def serve(host: str = HOST, port: int = PORT):
+    server = await start_server(host, port)
+    stop = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, stop.set)
+    print(f'running server on {host}:{port}')
+    await stop.wait()
     print('closing server')
     server.close()
-    event_loop.stop()
+    await server.wait_closed()
     print('shutdown complete')
-    sys.exit()
 
-def signal_handler(sig, frame):
-    print("signal {} caught".format(signal.Signals(sig).name))
-    shutdown()
+
+def main():
+    print('Starting sushi go server')
+    asyncio.run(serve())
+
 
 if __name__ == "__main__":
-    print('installing signal handlers')
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-    print('running server')
-    event_loop.run_forever()
+    main()

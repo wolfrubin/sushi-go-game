@@ -8,7 +8,7 @@ import unittest
 import random
 from sushi_go.game_engine import GameEngine
 from sushi_go.player import Player, PlayerCannotPlayException
-from sushi_go.deck import PuddingCard, ChopsticksCard, TempuraCard, WasabiCard, SquidNigiriCard, CARD_TYPE_DISTRIBUTION
+from sushi_go.deck import PuddingCard, ChopsticksCard, TempuraCard, SashimiCard, WasabiCard, SquidNigiriCard, CARD_TYPE_DISTRIBUTION
 
 
 class TestGameEngine(unittest.TestCase):
@@ -315,8 +315,9 @@ class TestGameEngine(unittest.TestCase):
         self.game_engine.start_game()
         chopsticks = ChopsticksCard()
         self.player_one.played_cards = [chopsticks]
-        hand = self.player_one.current_hand
-        first, second = hand[0], hand[1]
+        # fixed cards so a random wasabi + nigiri draw can't merge on the table
+        first, second = TempuraCard(), SashimiCard()
+        self.player_one.current_hand[0:2] = [first, second]
 
         self.game_engine.select_and_play_two(self.player_one.name, 0, 1)
 
