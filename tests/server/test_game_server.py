@@ -1,6 +1,7 @@
 """Tests for the SuGo game server: request parsing, dispatching, response
 encoding, and a few end to end conversations over a real local socket."""
 import asyncio
+import json
 import unittest
 from unittest import mock
 
@@ -102,7 +103,7 @@ class TestDispatch(DispatchTestCase):
         self.assertEqual(self.dispatch('PLAY_CARD', body='0').status, '1')
         state = self.dispatch('GAME_STATE')
         self.assertEqual(state.status, '1')
-        self.assertTrue(state.body.startswith('[['))
+        self.assertEqual(json.loads(state.body)['status'], 'playing')
 
     def test_bad_play_body_is_failure(self):
         self.dispatch('CREATE_GAME')

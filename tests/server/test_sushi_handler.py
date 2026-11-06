@@ -1,5 +1,6 @@
 """Tests for the SuGo request handlers. These exercise the handlers directly
 (no sockets), resetting the shared game dictionary between tests."""
+import json
 import unittest
 from server import sushi_handler
 from server.sugo_request import SuGoRequest
@@ -104,15 +105,74 @@ class TestStartGame(HandlerTestCase):
 
 class TestGameState(HandlerTestCase):
 
-    def test_game_state_returns_only_requesting_players_hand(self):
+    def state(self, player='alice'):
+        return json.loads(sushi_handler.GameStateHandler().handle(req('GAME_STATE', player)))
+
+    def test_game_state_is_json_for_the_requesting_player(self):
         engine = self.ready_game()
-        state = sushi_handler.GameStateHandler().handle(req('GAME_STATE', 'alice'))
+        state = self.state('alice')
         alice = [p for p in engine.players if p.name == 'alice'][0]
-        self.assertEqual(state, str([alice.current_hand]))
+        self.assertEqual(state['you'], 'alice')
+        self.assertEqual(state['status'], 'playing')
+        self.assertEqual(state['hand'], [c.to_dict() for c in alice.current_hand])
+
+    def test_game_state_hides_opponents_hands(self):
+        self.ready_game()
+        state = self.state('alice')
+        bob = [p for p in state['players'] if p['name'] == 'bob'][0]
+        self.assertEqual(bob['hand_size'], 10)
+        self.assertNotIn('hand', bob)
+
+    def test_game_state_in_lobby(self):
+        self.create()
+        state = self.state()
+        self.assertEqual(state['status'], 'lobby')
+        self.assertEqual(state['hand'], [])
+        self.assertFalse(state['can_play'])
+
+    def test_game_state_unknown_player(self):
+        self.ready_game()
+        with self.assertRaises(InvalidRequestError):
+            self.state('mallory')
 
     def test_game_state_missing_game(self):
         with self.assertRaises(GameDoesNotExistError):
             sushi_handler.GameStateHandler().handle(req('GAME_STATE'))
+
+
+class TestListGames(HandlerTestCase):
+
+    def games(self):
+        return json.loads(sushi_handler.ListGamesHandler().handle(req('LIST_GAMES')))
+
+    def test_no_games(self):
+        self.assertEqual(self.games(), [])
+
+    def test_lists_games_players_and_status(self):
+        self.create()
+        self.join('bob')
+        sushi_handler.CreateGameHandler().handle(req('CREATE_GAME', 'carol', game='other'))
+        self.start()
+        games = {g['name']: g for g in self.games()}
+        self.assertEqual(games['g'], {'name': 'g', 'players': ['alice', 'bob'], 'status': 'playing'})
+        self.assertEqual(games['other'], {'name': 'other', 'players': ['carol'], 'status': 'lobby'})
+
+
+class TestJoinRestrictions(HandlerTestCase):
+
+    def test_cannot_join_game_in_progress(self):
+        self.ready_game()
+        with self.assertRaises(GameInProgressError):
+            self.join('carol')
+        self.assertEqual(sushi_handler.GAME_DICT['g'].number_of_players, 2)
+
+    def test_cannot_join_full_game(self):
+        self.create()
+        for name in ('b', 'c', 'd', 'e'):
+            self.join(name)
+        with self.assertRaises(InvalidRequestError):
+            self.join('f')
+        self.assertEqual(sushi_handler.GAME_DICT['g'].number_of_players, 5)
 
 
 class TestPlayCard(HandlerTestCase):
@@ -189,6 +249,17 @@ class TestPlayCard(HandlerTestCase):
 
 
 class TestGameDict(unittest.TestCase):
+
+    def test_contains_len_items_remove(self):
+        games = sushi_handler.SuGoGameDict()
+        games['a'] = 1
+        games['b'] = 2
+        self.assertIn('a', games)
+        self.assertEqual(len(games), 2)
+        self.assertEqual(sorted(games.items()), [('a', 1), ('b', 2)])
+        games.remove('a')
+        games.remove('missing')  # harmless
+        self.assertNotIn('a', games)
 
     def test_missing_key_raises_game_does_not_exist(self):
         with self.assertRaises(GameDoesNotExistError):

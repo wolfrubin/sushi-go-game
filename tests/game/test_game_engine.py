@@ -523,3 +523,108 @@ class TestGameEngineFlow(unittest.TestCase):
         engine.select_and_play('a', 0)
         self.assertIs(squid.wasabi, wasabi)
         self.assertEqual(engine.scorer.score_for_independent_hand(a.played_cards), 9)
+
+
+class TestGameState(unittest.TestCase):
+
+    def make_engine(self, names=('a', 'b')):
+        engine = GameEngine('state')
+        for name in names:
+            engine.add_player_named(name)
+        return engine
+
+    def test_card_to_dict(self):
+        from sushi_go.deck import EggNigiriCard, ThreeRollMakiCard
+        self.assertEqual(TempuraCard().to_dict(), {'type': 'TempuraCard'})
+        nigiri = EggNigiriCard()
+        self.assertEqual(nigiri.to_dict(), {'type': 'EggNigiriCard', 'wasabi': False})
+        nigiri.wasabi = WasabiCard()
+        self.assertEqual(nigiri.to_dict(), {'type': 'EggNigiriCard', 'wasabi': True})
+        self.assertEqual(ThreeRollMakiCard().to_dict(), {'type': 'ThreeRollMakiCard', 'rolls': 3})
+
+    def test_lobby_state(self):
+        state = self.make_engine().state_for('a')
+        self.assertEqual(state['status'], 'lobby')
+        self.assertEqual([p['name'] for p in state['players']], ['a', 'b'])
+        self.assertFalse(state['can_play'])
+        self.assertEqual(state['hand'], [])
+
+    def test_playing_state_hides_other_hands(self):
+        engine = self.make_engine()
+        engine.start_game()
+        state = engine.state_for('a')
+        self.assertEqual(state['status'], 'playing')
+        self.assertEqual((state['round'], state['max_rounds']), (1, 3))
+        self.assertEqual(len(state['hand']), 10)
+        self.assertTrue(state['can_play'])
+        self.assertTrue(all('hand' not in p and p['hand_size'] == 10 for p in state['players']))
+
+    def test_has_played_tracks_turn(self):
+        engine = self.make_engine()
+        engine.start_game()
+        engine.select_and_play('a', 0)
+        state = engine.state_for('b')
+        self.assertEqual({p['name']: p['has_played'] for p in state['players']}, {'a': True, 'b': False})
+        self.assertFalse(engine.state_for('a')['can_play'])
+        engine.select_and_play('b', 0)
+        state = engine.state_for('a')
+        self.assertTrue(state['can_play'])
+        self.assertFalse(any(p['has_played'] for p in state['players']))
+
+    def test_can_use_chopsticks(self):
+        engine = self.make_engine()
+        engine.start_game()
+        self.assertFalse(engine.state_for('a')['can_use_chopsticks'])
+        engine.players[0].played_cards = [ChopsticksCard()]
+        self.assertTrue(engine.state_for('a')['can_use_chopsticks'])
+
+    def test_played_cards_show_wasabi_merge(self):
+        engine = self.make_engine()
+        engine.start_game()
+        a = engine.players[0]
+        wasabi, squid = WasabiCard(), SquidNigiriCard()
+        a.current_hand[0:2] = [wasabi, squid]
+        a.play_card(wasabi)
+        a.can_play = True
+        a.play_card(squid)
+        played = engine.state_for('b')['players'][0]['played']
+        self.assertEqual(played, [{'type': 'SquidNigiriCard', 'wasabi': True}])
+
+    def test_unknown_player(self):
+        with self.assertRaises(IndexError):
+            self.make_engine().state_for('zzz')
+
+    def test_last_round_summary_survives_table_reset(self):
+        engine = self.make_engine()
+        engine.start_game()
+        engine.players[0].played_cards = [TempuraCard(), TempuraCard()]
+        engine.end_current_round()
+        state = engine.state_for('a')
+        self.assertEqual(state['round'], 2)
+        self.assertEqual(state['players'][0]['played'], [])
+        summary = state['last_round']
+        self.assertEqual(summary['number'], 1)
+        self.assertEqual(summary['players']['a']['score'], 5)
+        self.assertEqual(len(summary['players']['a']['played']), 2)
+        self.assertEqual(state['players'][0]['scores'], [5])
+
+    def test_finished_state_and_no_more_plays(self):
+        engine = self.make_engine()
+        engine.start_game()
+        engine.current_round = engine.max_rounds - 1
+        totals = engine.end_current_round()
+        state = engine.state_for('a')
+        self.assertEqual(state['status'], 'finished')
+        self.assertEqual(state['round'], engine.max_rounds)
+        self.assertEqual(state['final_scores'], totals)
+        with self.assertRaises(Exception):
+            engine.select_and_play('a', 0)
+        with self.assertRaises(Exception):
+            engine.select_and_play_two('a', 0, 1)
+
+    def test_state_is_json_serialisable(self):
+        import json
+        engine = self.make_engine(('a', 'b', 'c'))
+        engine.start_game()
+        engine.end_current_round()
+        json.dumps(engine.state_for('b'))
